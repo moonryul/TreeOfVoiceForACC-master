@@ -1,0 +1,5 @@
+sceneSetups:
+- path: C:/Users/moonrjung/Dropbox/ACCExhibition/TreeOfVoiceForACC-master/TreeOfVoiceForACC-master/assets/TreeOfVoiceForACC.unity
+  isLoaded: 1
+  isActive: 1
+  isSubScene: 0

@@ -1,0 +1,1214 @@
+﻿#pragma kernel SimulateBoids
+
+// 스레드 그룹의 스레드 사이즈
+#define BLOCK_SIZE 1024
+
+#define M_PI 3.1415926535897932384626433832795
+#define  epsilon 1e-4 
+
+
+// 보이드 구조체
+
+struct Boid
+{
+	//float3 wallOrigin; // the reference position of the wall (the boid reference frame) on which the boid is 
+	//float3  eulerAngles; // the rotation of the boid reference frame
+	float4x4 boidFrame; // also includes position
+	float3  position; // the position of the  boid in the boid reference frame
+	float3  scale;
+	float3  headDir; // the head angle of the  boid on the local plane: from 0 to 2 *PI
+	float speed;            // the speed of a boid
+
+	float  radius; // the radius of a circle boid
+	float3 colorHSV;         // HSV color
+	float4 color;         // RGBA color
+	float2 soundGrain; //        the freq (pitch) and amp of the boid sound grain
+	float duration; //   the duration of the boid for one frame. 
+	int   wallNo;    // the number of the wall on which the boid is 
+	
+
+};
+//
+//m_BoidComputeShader.SetInt("_SphericalMotion", m_SphericalMotion);
+//m_BoidComputeShader.SetFloat("_MinDomainRadius", m_MinDomainRadius);
+//m_BoidComputeShader.SetFloat("_MaxDomainRadius", m_MaxDomainRadius);
+//
+
+RWStructuredBuffer<Boid> _BoidBuffer;
+
+float _MinDomainRadius;
+float _MaxDomainRadius;
+
+int _BoidsNum;
+
+float _DeltaTime;
+
+
+float _SeparateRadius;
+float _SeparateWeight;
+
+float _AlignmentRadius;
+float _AlignmentWeight;
+
+float _CohesionRadius;
+float _CohesionWeight;
+
+float _GroundFlockingWeight;
+float _GroundCirculationWeight;
+float _GroundDivergeWeight;
+
+
+
+float _CeilingFlockingWeight;
+float _CeilingCirculationWeight;
+float _CeilingConvergeWeight;
+
+
+float _GroundMinHue;
+float _GroundMaxHue;
+float _GroundMinSaturation;
+float _GroundMaxSaturation;
+float _GroundMinValue;
+float _GroundMaxValue;
+
+float _GroundMinAlpha;
+float _GroundMaxAlpha;
+
+float _CeilingMinHue;
+float _CeilingMaxHue;
+float _CeilingMinSaturation;
+float _CeilingMaxSaturation;
+float _CeilingMinValue;
+float _CeilingMaxValue;
+
+float _CeilingMinAlpha;
+float _CeilingMaxAlpha;
+
+
+
+
+float3 _GroundMaxCorner;
+float3 _GroundMinCorner;
+
+float3 _CeilingMaxCorner;
+float3 _CeilingMinCorner;
+
+float _GroundRadius; // maximum ground radias
+float _CeilingRadius;
+
+float _CeilingInnerRadius; // minimum ceiling radius used as the min radius for both ground and ceililing
+//float _GroundPlaneDepth, _CeilingPlaneDepth;
+
+
+float _MinSpeed, _MaxSpeed;
+
+float _ScaleFactor;
+float _SpeedFactor;
+//float _ScaleFactor;
+
+
+float3 ClampRadius(float3 pos,  float minRadius, float maxRadius)
+{
+	return  float3( clamp( pos[0], minRadius, maxRadius),
+		clamp(pos[1], minRadius, maxRadius), clamp( pos[1], minRadius, maxRadius) );
+}
+
+
+float3 getTangentComponent(float3 inputVector, float3 normalDir)
+{
+
+	//pBoid.position = _MaxDomainRadius * dirFromCenter;
+	float3 normalComponent = dot(normalDir, inputVector) * normalDir;
+	float3 tangentComponent = inputVector- normalComponent;
+	return tangentComponent;
+}
+
+// find angle theta such that normalized vec = (cos(theta), sin(theta))
+// atan: Arctangent of x in range [-π/2, π/2].
+
+// atan2(y,x): Arctangent of y/x in range [-π, π].
+
+//this.getAngle = function(){
+//var angle = Math.atan2(this.y, this.x);   //radians
+//										  // you need to devide by PI, and MULTIPLY by 180:
+//var degrees = 180 * angle / Math.PI;  //degrees
+//return (360 + Math.round(degrees)) % 360; //round 
+// https://msdn.microsoft.com/ko-kr/library/system.math.atan2(v=vs.110).aspx
+
+float findAngleForVector( float3 vec)
+{
+	
+	// get the ground projection of vec along y axis
+		float theta = atan2(vec.z, vec.x); // theta ranges (0,pi) or (0 -pi)
+
+		if (theta < 0) { // negative theta means that vec (x,y) is in 3rd or 4th quadrant, measuring in the clockwise direction
+			return (2 * M_PI + theta); // angle measured in the counterclockwise direction
+		}
+		else {
+			return theta;
+		}
+	
+}
+
+
+float3 findDirVectorForAngle(float  angle)
+{
+	return float3( cos(angle), 0.0, sin(angle) );
+	
+}
+
+
+float3 findUnitVectorOrthoTo(float3 vec)
+{
+	//float3 yVec, xzVec;
+
+	//if (vec.y == 0.0)
+	//{
+	//	xzVec = vec;
+	//}// 2D vector 
+	//else
+	//{ // 3D Vector
+	//	yVec = dot(vec, float3(0, 1, 0)); // projection on the y axis
+	//	xzVec = vec - yVec;
+	//}
+
+
+	
+		// find (x,y) such that (x,y) * (a,b) = 0, and x^2 + y^2 =1
+
+		//float x = sqrt(b*b / (a*a + b * b)); // choose the positive x; it is arbitrary
+		//float y = -x * a / b;
+
+		//float x = sqrt( xzVec.z*  xzVec.z / ( xzVec.x* xzVec.x + xzVec.z * xzVec.z));
+
+		//// choose the positive x; it is arbitrary
+		//float y = -x * xzVec.x / xzVec.z;
+
+		float x = sqrt( vec.z *  vec.z / ( vec.x* vec.x + vec.z * vec.z));
+
+		//// choose the positive x; it is arbitrary
+		//float y = -x * xzVec.x / xzVec.z;
+
+		float y = -x * vec.x / vec.z;
+		return float3(x, 0, y);
+	
+		
+}
+
+
+//\param fR Red component, used as output, range: [0, 1]
+
+//\param fG Green component, used as output, range: [0, 1]
+
+//\param fB Blue component, used as output, range: [0, 1]
+
+//\param fH Hue component, used as input, range: [0, 1] => changed to [0,360] at the beginning
+
+//\param fS Hue component, used as input, range: [0, 1]
+
+//\param fV Hue component, used as input, range: [0, 1]
+
+//HSL to RGB :
+/**
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 255].
+ *
+ * @param   {number}  h       The hue
+ * @param   {number}  s       The saturation
+ * @param   {number}  l       The lightness
+ * @return  {Array}           The RGB representation
+ */
+
+float  hue2rgb(float p, float q, float t)
+{
+	if (t < 0) t += 1;
+	if (t > 1) t -= 1;
+
+	if (t < 1.0 / 6.0) return p + (q - p) * 6 * t;
+	if (t < 1.0 / 2.0) return q;
+	if (t < 2.0 / 3.0) return p + (q - p) * (2.0 / 3.0 - t) * 6;
+
+	return p;
+}
+
+float3 hslToRgb(float h, float s, float l)
+{
+	float r, g, b;
+
+	if (s == 0)
+	{
+		r = 1;  g = 1;  b = l; // achromatic
+	}
+	else
+	{
+		
+
+		float q = ( l < 0.5 )?  l * (1 + s) :  l + s - l * s;
+		float p = 2 * l - q;
+
+		r = hue2rgb(p, q, h + 1.0/3.0);
+		g = hue2rgb(p, q, h);
+		b = hue2rgb(p, q, h - 1.0/3.0);
+	}
+
+	return float3(r, g, b);
+
+	
+	/*return float3( 
+		      max(0, min(r, 1))
+			, max(0, min(g, 1))
+			, max(0, min(b, 1))
+	       ) ;*/
+}
+
+//https://gist.github.com/mjackson/5311256
+//function hslToRgb(h, s, l) {
+//	var r, g, b;
+//
+//	if (s == 0) {
+//		r = g = b = l; // achromatic
+//	}
+//	else {
+//		var hue2rgb = function hue2rgb(p, q, t) {
+//			if (t < 0) t += 1;
+//			if (t > 1) t -= 1;
+//			if (t < 1 / 6) return p + (q - p) * 6 * t;
+//			if (t < 1 / 2) return q;
+//			if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+//			return p;
+//		}
+//
+//		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+//		var p = 2 * l - q;
+//		r = hue2rgb(p, q, h + 1 / 3);
+//		g = hue2rgb(p, q, h);
+//		b = hue2rgb(p, q, h - 1 / 3);
+//	}
+//
+//	return[Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+//}
+
+
+
+
+//https://gist.github.com/vahidk/05184faf3d92a0aa1b46aeaa93b07786
+
+
+// This code is based on https://en.wikipedia.org/wiki/HSL_and_HSV
+// Free to use for any purpose. No attribution needed.
+
+float3 rgbToHsl2(float r, float g, float b) 
+{
+	/*float r = r0 / 255; 
+	float g = g0/255;
+	float b = b0/ 255;*/
+
+	float max1 = max(r, max(g, b) );
+	float  min1 = min(r, min(g, b) );
+	float  c = max1 - min1;
+	float h;
+	if (c ==  0) h = 0;
+	else if (max1 == r) h = (g - b) / c % 6;
+	else if (max1 ==  g) h = (b - r) / c + 2;
+	else if (max1 ==  b) h = (r - g) / c + 4;
+	float l = (min1 + max1) / 2;
+	float s = c== 0 ? 0 : c / (1 - abs(2 * l - 1)); // c==0 <=> l==1 or l==0
+
+	return float3(  (h * 60) , s, l ); // h*60 ranges 0 to 360
+}// rgbToHsl2
+
+float3 hslToRgb2( float H, float S, float L) { // h in [0,360], s an l l in [0,1]
+
+	float c = (1 - abs(2 * L - 1) ) * S;
+	float hp = H / 60.0; // h in [0,360] => hp in [0,6]
+	float  x = c * (1 - abs( (hp % 2) - 1) ); // x: intermediate
+	float3 rgb1;
+
+	if ( isnan(H) ) rgb1 = float3 (0, 0, 0);
+	else if (hp <= 1) rgb1 = float3(c, x, 0);
+	else if (hp <= 2) rgb1 = float3(x, c, 0);
+	else if (hp <= 3) rgb1 = float3(0, c, x);
+	else if (hp <= 4) rgb1 = float3(0, x, c);
+	else if (hp <= 5) rgb1 = float3( x, 0, c);
+	else if (hp <= 6) rgb1 = float3(c, 0, x);
+
+	float m = L - c * 0.5;
+
+	return float3( rgb1[0] + m,
+			        rgb1[1] + m,
+			        rgb1[2] + m);
+}//hslToRgb2
+
+float3 hslToHsv(float H, float S, float L)
+{
+	float H1 = H;
+	float V = L + S * min(L, 1 - L);
+	float S1 = (V == 0.0) ? 0.0 : ( 2.0 - 2.0 * L / V );
+
+	return float3(H1, S1, V);
+
+}//hslToHsv
+
+
+
+// This code is based on https://en.wikipedia.org/wiki/HSL_and_HSV
+// Free to use for any purpose. No attribution needed.
+//
+//function rgbToHsl(r, g, b) {
+//	r /= 255; g /= 255; b /= 255;
+//	let max = Math.max(r, g, b);
+//	let min = Math.min(r, g, b);
+//	let d = max - min;
+//	let h;
+//	if (d == = 0) h = 0;
+//	else if (max == = r) h = (g - b) / d % 6;
+//	else if (max == = g) h = (b - r) / d + 2;
+//	else if (max == = b) h = (r - g) / d + 4;
+//	let l = (min + max) / 2;
+//	let s = d == = 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+//	return[h * 60, s, l];
+//}
+//
+//function hslToRgb(h, s, l) {
+//	let c = (1 - Math.abs(2 * l - 1)) * s;
+//	let hp = h / 60.0;
+//	let x = c * (1 - Math.abs((hp % 2) - 1));
+//	let rgb1;
+//	if (isNaN(h)) rgb1 = [0, 0, 0];
+//	else if (hp <= 1) rgb1 = [c, x, 0];
+//	else if (hp <= 2) rgb1 = [x, c, 0];
+//	else if (hp <= 3) rgb1 = [0, c, x];
+//	else if (hp <= 4) rgb1 = [0, x, c];
+//	else if (hp <= 5) rgb1 = [x, 0, c];
+//	else if (hp <= 6) rgb1 = [c, 0, x];
+//	let m = l - c * 0.5;
+//	return[
+//		Math.round(255 * (rgb1[0] + m)),
+//			Math.round(255 * (rgb1[1] + m)),
+//			Math.round(255 * (rgb1[2] + m))];
+//}
+//
+//float3 HSVtoRGB(float fH, float fS, float fV)
+//{
+//    float fR, fG, fB;
+//	
+//	float fHdeg = fH * 360;
+//
+//	float fC = fV * fS; // Chroma
+//
+//	float fHPrime = fmod(fHdeg / 60.0, 6);
+//
+//	float fX = fC * (1 - abs(fmod(fHPrime, 2) - 1));
+//
+//	float fM = fV - fC;
+//
+//
+//
+//	if (0 <= fHPrime && fHPrime < 1) 
+//	{
+//
+//		fR = fC;
+//
+//		fG = fX;
+//
+//		fB = 0;
+//
+//	}
+//	else 
+//		if (1 <= fHPrime && fHPrime < 2) 
+//		{
+//
+//		fR = fX;
+//
+//		fG = fC;
+//
+//		fB = 0;
+//
+//	    }
+//	else 
+//		if (2 <= fHPrime && fHPrime < 3)
+//		{
+//
+//		fR = 0;
+//
+//		fG = fC;
+//
+//		fB = fX;
+//
+//	    }
+//	else if (3 <= fHPrime && fHPrime < 4) 
+//	{
+//
+//		fR = 0;
+//
+//		fG = fX;
+//
+//		fB = fC;
+//
+//	}
+//	else if (4 <= fHPrime && fHPrime < 5) 
+//	{
+//
+//		fR = fX;
+//
+//		fG = 0;
+//
+//		fB = fC;
+//
+//	}
+//	else if (5 <= fHPrime && fHPrime < 6) 
+//	{
+//
+//		fR = fC;
+//
+//		fG = 0;
+//
+//		fB = fX;
+//
+//	}
+//	else {
+//
+//		fR = 0;
+//
+//		fG = 0;
+//
+//		fB = 0;
+//
+//	}
+//
+//
+//
+//	fR += fM;
+//
+//	fG += fM;
+//
+//	fB += fM;
+//
+//	return  float3(fR, fG, fB);
+//
+//} // HSVtorgb
+
+
+
+
+  // determine the color of the boid according to the motion state (angle, radius, speed) of the boid,
+  // radius is the length of pBoid.position
+  // We use  HSV color model. The hue angle on the hue circle corresponds to the position of the boid relative to the x axis
+  // This represents the variety of the boids. We use the saturation to represent the speed of the boid; the speed corresponds to the 
+  // vividness, which corresponds to the saturation of the color.
+  // The value/lightness corresponds to the radius of the boid from the center. 
+
+
+// Compute the HSV color of the boid and convert it to RGB color
+void computeBoidColor(inout Boid pBoid) 
+{
+
+
+	float h, hDeg, s, l,  alpha;
+	
+	float angDeg;
+
+	if ( pBoid.wallNo == 0) // lower hemisphere
+	{
+		
+		// get the ground projection of pBoid vector
+
+		//ang = findAngleForVector(pBoid.position) / (2 * M_PI); // convert the angle (in radian) to the value between 0 and 1
+
+		angDeg = findAngleForVector(pBoid.position) * (180 / M_PI);
+		//if (ang < 0.5) // vector in upper circle
+		//{
+		//	f = ang * 2.0;
+		//	h = lerp( _GroundMinHue, _GroundMaxHue, f);
+		//}
+		//else // vector in lower circle
+		//{
+		//	f = 2 * ang - 1.0;
+		//	h = lerp(  _GroundMaxHue, _GroundMinHue, f);
+
+		//}
+
+
+		// ang ranges from 0 to 1 => the hue (h) ranges from MinHue to MaxHue
+
+		hDeg = _GroundMinHue + (_GroundMaxHue - _GroundMinHue) / 360 * angDeg;
+
+		// change to the range  of h which may be negative to the range  (0,1)
+
+		if (hDeg < 0)
+		{
+			hDeg = hDeg + 360;
+		}
+
+		//h = h * 360.0; // hue in the degree range ??? (different from Unity API, where h,s,v are from 0 to 1 )
+
+		//lerp(a, b, f)
+		
+
+		//distFromBound = abs( _GroundRadius - length(pBoid.position );
+		
+	
+		// f = clamp(distFromBound / _GroundRadius, 0.0, 1.0);
+
+		//s = lerp(_GroundMinSaturation, _GroundMaxSaturation, f);
+
+		 //v = lerp( _GroundMinValue, _GroundMaxValue,  f);
+
+		 //alpha = lerp(_GroundMinAlpha, _GroundMaxAlpha, f);
+
+		
+
+			float boidVerticalComponent= dot( pBoid.position, float3(0,-1,0)  ) ;
+			// Note that boidVerticalComponent is always positive
+
+			float3 boidHorizontalVector = pBoid.position - boidVerticalComponent * float3(0, -1, 0);
+			
+			float boidHorizontalRadius = length(boidHorizontalVector);
+
+
+			if (boidHorizontalRadius < _CeilingInnerRadius)
+			{
+				boidHorizontalRadius = _CeilingInnerRadius;
+			}
+
+			if (boidHorizontalRadius > _MaxDomainRadius)
+			{
+				boidHorizontalRadius = _MaxDomainRadius;
+			}
+
+
+			// boid at _MaxDomainRadius => s = MinSaturation
+			// boid at _CeilingInnerRadius => MaxSaturation
+			s = _GroundMinSaturation + (_GroundMaxSaturation - _GroundMinSaturation) /
+				(_CeilingInnerRadius - _MaxDomainRadius) *
+				(boidHorizontalRadius - _MaxDomainRadius);
+
+
+		
+			l = _GroundMinValue + (_GroundMaxValue - _GroundMinValue) /
+				( _MaxDomainRadius - 0.0 ) * (boidVerticalComponent - 0.0);
+
+			alpha = 1;					   		
+
+		
+			pBoid.color = float4(hslToRgb(hDeg / 360, s, l), alpha);
+			//pBoid.color = float4(hslToRgb2(hDeg, s, l), alpha);
+			float3 hsv = hslToHsv(hDeg, s, l);
+			pBoid.colorHSV = hsv;
+					
+			return;
+		 
+		
+
+	}//if (pBoid.wallNo == 1) // ceiling
+
+	if (pBoid.wallNo == 1) // ceiling
+	{
+		angDeg = findAngleForVector(pBoid.position) * (180 / M_PI);  // convert the angle (in radian) to the value between 0 and 1
+/*
+		if (ang < 0.5)
+		{
+			f = ang * 2.0;
+			h = lerp(_CeilingMinHue,  _CeilingMaxHue, f);
+		}
+		else
+		{
+			f = 2 * ang - 1.0;
+			h = lerp( _CeilingMaxHue, _CeilingMinHue, f);
+
+		}*/
+
+		hDeg = _CeilingMinHue + (_CeilingMaxHue - _CeilingMinHue) / 360 * angDeg;
+
+		// change to the range  of h which may be negative to the range  (0,1)
+
+		if (hDeg < 0)
+		{
+			hDeg = hDeg + 360;
+		}
+		//h = h * 360.0; // hue in the degree range
+
+
+		//h = lerp( 360.0 * _CeilingMinHue, 360.0 * _CeilingMaxHue, h); // reduce the Hue in range [0,1]to [_GroundMinHue, _GroundMaxHue]
+
+		
+		//s = lerp(_CeilingMinSaturation, _CeilingMaxSaturation, pBoid.speed / _MaxSpeed); // pBoid.speed is already between _MinSpeed and _MaxSpeed
+																							
+
+		/*distFromCenter  =  length(pBoid.position);
+
+		f = clamp( distFromCenter / _CeilingRadius, 0.0, 1.0);
+		s = lerp(_CeilingMinSaturation, _CeilingMaxSaturation, f );
+
+		v = lerp(_CeilingMinValue, _CeilingMaxValue, f);
+
+		alpha = lerp(_CeilingMinAlpha, _CeilingMaxAlpha, f);*/
+
+		//HSV = float3(h, s, v);
+
+		//pBoid.color = float4(HSV2RGB(HSV), alpha);
+
+
+
+
+		float boidVerticalComponent = dot(pBoid.position, float3(0, 1, 0));
+		// Note that boidVerticalComponent is always positive
+
+		float3 boidHorizontalVector = pBoid.position - boidVerticalComponent * float3(0, 1, 0);
+
+		float boidHorizontalRadius = length(boidHorizontalVector);
+
+
+		if (boidHorizontalRadius < _CeilingInnerRadius)
+		{
+			boidHorizontalRadius = _CeilingInnerRadius;
+		}
+
+		if (boidHorizontalRadius > _MaxDomainRadius)
+		{
+			boidHorizontalRadius = _MaxDomainRadius;
+		}
+
+
+		// boid at _GroundRadius => s = MinSaturation
+		// boid at _CeilingInnerRadius => MaxSaturation
+		s = _CeilingMinSaturation + (_CeilingMaxSaturation - _CeilingMinSaturation) /
+			(_CeilingInnerRadius - _MaxDomainRadius) *
+			(boidHorizontalRadius - _MaxDomainRadius);
+
+
+		// _GroundRadius is used as _HeightRadius because we have a sphere here
+		l = _CeilingMinValue + (_CeilingMaxValue - _CeilingMinValue) /
+			(_MaxDomainRadius - 0.0f) * (boidVerticalComponent - 0.0f);
+
+
+
+		//float boidRadius = length(pBoid.position);
+
+		//if (boidRadius < _CeilingInnerRadius) {
+		//	boidRadius = _CeilingInnerRadius;
+		//}
+
+		//if (boidRadius > _GroundRadius)
+		//{
+		//	boidRadius = _GroundRadius;
+		//}
+
+		//// boid at _GroundRadius => s = MinSaturation
+		//// boid at _CeilingInnerRadius => MaxSaturation
+		//s = _CeilingMinSaturation + (_CeilingMaxSaturation - _CeilingMinSaturation) /
+		//	(_CeilingInnerRadius - _GroundRadius) *
+		//	(boidRadius - _GroundRadius);
+
+		//float ceilingMaxValue = (_CeilingMinValue + _CeilingMaxValue) / 2;
+
+		//l = _CeilingMinValue + ( ceilingMaxValue - _CeilingMinValue) /
+		//	(_CeilingInnerRadius - _GroundRadius) *
+		//	(boidRadius - _GroundRadius); 
+
+		alpha = 1;
+			   
+
+		float3 hsv = hslToHsv(hDeg, s, l);
+		pBoid.colorHSV = hsv;
+		
+
+		pBoid.color = float4( hslToRgb(hDeg/360, s, l), alpha);
+		//pBoid.color = float4( hslToRgb2(hDeg, s, l), alpha);
+
+		return;
+
+	}
+
+	
+
+}// void computeBoidColor(Boid pBoid)
+
+
+void moveBoidsToLowerHemisphere(inout Boid pBoid)
+{
+	// The boid's belly looks down right now. 
+	// go to the opposite position on the lower hemisphere
+	float3 newPosition = -pBoid.position; 
+
+	//It should turn around so that the belly looks upward.
+	// Rotate the frame about the Z axis by 180 deg => The Z axis does not change
+	// the Y axis points to the opposite direction. The X Axis will also points to the
+	// opposite direction
+	
+
+	float4 firstRow = pBoid.boidFrame[0];	
+	float4 secondRow = pBoid.boidFrame[1];	
+	float4 thirdRow = pBoid.boidFrame[2]; 	
+	float4 fourthRow = pBoid.boidFrame[3]; 
+	
+
+	//https://en.wikibooks.org/wiki/Cg_Programming/Vector_and_Matrix_Operations
+	//float3x3 m = float3x3(
+	//	1.1, 1.2, 1.3, // first row 
+	//	2.1, 2.2, 2.3, // second row
+	//	3.1, 3.2, 3.3  // third row
+	//	);
+	//float3 row2 = m[2]; // = float3(3.1, 3.2, 3.3)
+	//float m20 = m[2][0]; // = 3.1
+	//float m21 = m[2].y; // = 3.2
+
+	float4 XAxis = float4(firstRow[0], secondRow[0], thirdRow[0], fourthRow[0]);
+	float4 YAxis = float4(firstRow[1], secondRow[1], thirdRow[1], fourthRow[1]);
+	float4 ZAxis = float4(firstRow[2], secondRow[2], thirdRow[2], fourthRow[2]);
+	//float4 Pos   = float4(firstRow[3], secondRow[3], thirdRow[3], fourthRow[4]);
+	// Pos is equal to pBoid.position
+
+
+	pBoid.position = newPosition;
+
+	float4 newZAxis = ZAxis;
+	float4 newYAxis = -YAxis;
+	float4 newXAxis = -XAxis;
+
+	 firstRow = float4(newXAxis[0], newYAxis[0], newZAxis[0], pBoid.position[0]);
+	 secondRow = float4(newXAxis[1], newYAxis[1], newZAxis[1], pBoid.position[1]);
+	thirdRow = float4(newXAxis[2], newYAxis[2], newZAxis[2], pBoid.position[2]);
+	fourthRow = float4(0 , 0, 0, 1); 
+	//(0, 0, 0, 1);
+
+	pBoid.boidFrame = float4x4(firstRow, secondRow, thirdRow, fourthRow);
+
+	return;
+
+}//moveBoidsToLowerHemisphere()
+
+
+
+//https://msdn.microsoft.com/ko-kr/library/windows/desktop/ff471442(v=vs.85).aspx
+[numthreads(BLOCK_SIZE, 1, 1)]
+void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
+{
+	// Process a SINGLE Boid refered to by DTid.x
+
+	const int pId = DTid.x;
+
+	Boid pBoid = _BoidBuffer[pId];    // Field values of the _BoidBuffer structures are copied to pBoid??
+
+
+	int sepCnt = 0;
+	int aliCnt = 0;
+	int cohCnt = 0;
+
+
+	float3 sepVecSum = (float3)0.0;
+	float3 avgSepVec = (float3)0.0;
+
+	float3 cohPosSum = (float3)0.0;
+	float3 avgCohPos = (float3)0.0;
+	float3 avgCohVec = (float3)0.0;
+
+	float3 alignVecSum = (float3)0.0;
+
+	float3 avgAlignVec = (float3)0.0;
+
+
+	float3 sepDir = (float3)0.0; // the unit direction for separation
+	float3 alignDir = (float3)0.0;  // unit direction for alignment
+	float3 cohesionDir = (float3)0.0; // unit direction for cohesion
+
+	float3 flockingHeadDir = (float3)0.0; // the head direction of the boid considering the neighbor flock
+	float3 circulationDir = (float3)0.0;
+	float3 goalSeekingDir = (float3)0.0;
+
+	float flockingWeight = (float)0.0;
+	float circulationWeight = (float)0.0;
+	float goalSeekingWeight = (float)0.0;
+
+
+	float deviation;
+
+	float weight, dist;
+	float3 diffVec;
+
+
+	// apply three boid rules using neighbors
+
+	// check if pBoid is on the upper hemisphere or the lower hemisphsere because
+	// the motion is different depending on it.
+
+	
+	//if (pBoid.position.y >= 0.0) // the boid is in the ceiling
+	//{
+
+
+		for (int nId = 0; nId < _BoidsNum; nId++)
+		{
+			//if (nId == pId) continue; // go to the next iteration
+
+			Boid nBoid = _BoidBuffer[nId];
+
+			//if (pBoid.wallNo != nBoid.wallNo) continue;  // consider only the boids on the same wall as the current pBoid
+
+			
+			diffVec = pBoid.position - nBoid.position; // the boid's position is (x,0,z) in  the wall  frame for the boid
+			dist = length(diffVec);
+
+
+			// check if the boid nBoid is a neighbor of the current boid pBoid for separation action
+			// The neighborhood is checked on the tangent plane at the sphere at the current location
+			// of the pBoid: For simplicity, it is assumed that boids within _SeparateRadius are on this
+			// tangent plane. For computation, we need to compute global vector of the local headDir
+			//https://en.wikibooks.org/wiki/Cg_Programming/Vector_and_Matrix_Operations
+			//float3x3 m = float3x3(
+			//1.1, 1.2, 1.3, // first row (not column as in GLSL!)
+			//	2.1, 2.2, 2.3, // second row
+			//	3.1, 3.2, 3.3  // third row
+			//	);
+			//	float3 row0 = float3(0.0, 1.0, 0.0);
+			//	float3 row1 = float3(1.0, 0.0, 0.0);
+			//	float3 row2 = float3(0.0, 0.0, 1.0);
+			//	float3x3 n = float3x3(row0, row1, row2); // sets rows of matrix n
+
+			// globalHeadDir has been adjusted so that they are on the tangent plane of the boid
+			//float4 globalHeadDir4 = mul(pBoid.boidFrame, float4(pBoid.headDir, 0));
+
+			//float3 globalHeadDir = float3(globalHeadDir[0], globalHeadDir[1], globalHeadDir[2]);
+
+			//float3 globalHeadDir = pBoid.headDir; // pBoid.headDir == pBoid.boidFrame[3] = Z axis
+
+			if (dist <= _SeparateRadius)
+
+			{
+				// project neibor nBoid onto the tangent plane of pBoid at its position on
+				// the sphere.
+
+				float3 pBoidUnitPositionVector = normalize(pBoid.position);
+				float  pBoidLength= length(pBoid.position);
+				float  nBoidLengthAlongpBoidPositionDir = dot(nBoid.position, pBoidUnitPositionVector);
+				float delta = pBoidLength - nBoidLengthAlongpBoidPositionDir;
+				float3 projectednBoidPos = nBoid.position + delta * pBoidUnitPositionVector;
+
+				float3 tangentialDiffVec = pBoid.position - projectednBoidPos;
+				float tangentialDist = length(tangentialDiffVec );
+
+				weight = smoothstep(0.0, _SeparateRadius, tangentialDist ); // smoothstep(x, a,b) clamps x between  a and b?
+				//x is clamped to the range [min,
+				//max] and then the interpolation formula is evaluated :
+				//-2 * ((x - min) / (max - min))3 + 3 * ((x - min) / (max - min))2
+
+				if (weight < epsilon)
+				{
+					weight = epsilon; // avoid too small a number for division
+				}
+
+				//sepVecSum += diffVec / weight; // sum  diffVec's to compute the average sepration vector
+				sepVecSum += tangentialDiffVec / weight;
+				sepCnt++;          // increament the separation neighor count
+			}
+
+			// check if the boid nBoid is a neighbor of the current boid pBoid for alignment action
+			if (dist <= _AlignmentRadius)
+			{
+				
+
+				//alignVecSum += nBoid.speed * nBoid.headDir; // sum  the direction angles to compute the average direction angle
+				  // sum the speed to compute the average speed
+				float3 nBoidHeadDirOnTangentPlaneOfpBoid =
+					            getTangentComponent( nBoid.headDir, normalize(pBoid.position) );
+				//alignVecSum += nBoid.speed * nBoid.headDir;
+
+				alignVecSum += nBoid.speed * nBoidHeadDirOnTangentPlaneOfpBoid;
+
+				aliCnt++;
+			}
+
+			// check if the boid nBoid is a neighbor of the curernt boid for cohesion action
+			if (dist <= _CohesionRadius)
+			{
+				// project neibor nBoid onto the tangent plane of pBoid at its position on
+				// the sphere.
+
+				float3 pBoidUnitPositionVector = normalize(pBoid.position);
+				float  pBoidLength = length(pBoid.position);
+				float  nBoidLengthAlongpBoidPositionDir = dot(nBoid.position, pBoidUnitPositionVector);
+				float delta = pBoidLength - nBoidLengthAlongpBoidPositionDir;
+				float3 projectednBoidPos = nBoid.position + delta * pBoidUnitPositionVector;
+
+				float3 tangentialDiffVec = pBoid.position - projectednBoidPos;
+				float tangentialDist = length(tangentialDiffVec);
+
+
+				//cohPosSum += nBoid.position; // sum the neighbor boid positions to compute the cohesion center position
+				cohPosSum += projectednBoidPos;
+				cohCnt++;
+			}
+
+
+		} //  for(int nId = 0; nId < _BoidsNum; nId++)
+
+	 // find the average separation vector  to achieve the average separation
+		if (sepCnt != 0) // This condition holds only for boids on the ground or the ceiling
+		{
+			avgSepVec = sepVecSum / sepCnt;
+			// avgSepVec is big enough so that the zero length issue can be ignored
+			//sepDir = normalize(avgSepVec); // the unit direction for separation
+		} // for separation
+
+
+	 // find the cohesion center position => Find the direction angle change to steer toward the cohesion center
+		if (cohCnt != 0) // This condition holds only for boids on the ground or the ceiling
+		{
+			avgCohPos = cohPosSum / cohCnt;
+
+			avgCohVec = avgCohPos - pBoid.position;
+
+			//cohesionDir = normalize(avgCohVec);
+
+
+		} // for coherence
+
+	 // find the direction angle difference and  speed difference for the alignment  of the current boid
+
+		if (aliCnt != 0) // This condition holds only for boids on the ground or the ceiling
+		{
+			avgAlignVec = alignVecSum / aliCnt;
+			//avgSpeedAlign = length(avgVecAlign);
+			//alignDir = normalize( avgVecAlign ); // unit direction for alignment
+		} // 
+
+
+		 // Consider all the desired components of the motion according to their weights
+
+
+		float3 flockingHeadVec = avgSepVec * _SeparateWeight + avgCohVec * _CohesionWeight +
+			avgAlignVec * _AlignmentWeight;
+
+		
+		flockingHeadDir = normalize(flockingHeadVec);
+		
+		//  apply two additional rules:
+		// (1) circulation action rule and (2) the diverge  seeking action rule
+
+		// Circulation Action: if the boid is on the ground or the ceiling, it tries to circulate about the center of the gournd or the ceiling
+
+		// Goal Seeking Action: Diverge or Converge Action: (1) if the boid is on the ground (wallNo ==0), it tries to move away from the center of the ground
+		// (2) if the boid on the ceiling (wallNo ==1), it tries to move toward the center of the ceiling
+
+		float currHeadAngle;
+		float circulationAngle;
+
+		// Find the circulating direction on the plane y = pBoid.position.y, that is, around the 
+		// vertical axis pointing to the apex of the sphere
+		//currHeadAngle = findAngleForVector(float3(pBoid.position[0], 0, pBoid.position[2]);
+
+		//currHeadAngle = findAngleForVector( pBoid.position );
+
+		//circulationAngle = currHeadAngle + M_PI / 2.0;
+		//// go to the perpendicular direction to the current  radius vector on 
+		//// on the plane y = pBoid.position.y
+
+		////circulationDir = findUnitVectorOrthoTo( pBoid.position );
+		//circulationDir = findDirVectorForAngle(circulationAngle);
+
+		circulationDir = -cross( normalize(pBoid.position), float3(0, 1, 0) );
+		// The minus is used to make the cross product follow the left hand rule like
+		// Unity
+
+
+		// Apply the goal seeking action: diverge  (in the ground / lower hemisphere)  from the
+		// south apex or converge ( in the ceiling/ upper hemisphere) the north apex
+
+		float3 pNewHeadVec;
+
+		if (pBoid.position.y >= 0)
+		{ // upper hemisphere
+			pBoid.wallNo = 1; // ceiling
+
+			goalSeekingWeight = _CeilingConvergeWeight;
+
+			flockingWeight = _CeilingFlockingWeight;
+			circulationWeight = _CeilingCirculationWeight;
+
+
+			// The goal is the apex of the upper hemisphere:
+
+			float3 goalPosGlobal = float3(0, _MaxDomainRadius, 0);
+
+			goalSeekingDir = normalize(goalPosGlobal - pBoid.position);
+			// project goalSeekingDir on the boid Frame plane; We use the Unity frame.
+
+			// Find the tagent component of goalSeekingDir
+			float3 normalDir  = normalize(pBoid.position);
+
+			//pBoid.position = _MaxDomainRadius * dirFromCenter;
+			//float3 normalComponent = dot(dirFromCenter, goalSeekingDir) * dirFromCenter
+			//float3 tangentialGoalSeekingDir = normalize(goalSeekingDir - normalComponent);
+			
+			float3 tangentialGoalSeekingDir = normalize(getTangentComponent(goalSeekingDir,  normalDir));
+
+			pNewHeadVec = flockingHeadDir * flockingWeight
+				+ circulationDir * circulationWeight + tangentialGoalSeekingDir * goalSeekingWeight;
+
+		} // upper hemisphere
+
+		else
+		{ // lower hemisphere
+			pBoid.wallNo = 0; // lower hemisphere
+
+			goalSeekingWeight = _GroundDivergeWeight;
+
+			flockingWeight = _GroundFlockingWeight;
+			circulationWeight = _GroundCirculationWeight;
+
+
+			// The goal is the apex of the upper hemisphere:
+
+			float3 sourcePosGlobal = float3(0, -_MaxDomainRadius, 0);
+
+			goalSeekingDir = normalize( pBoid.position - sourcePosGlobal);
+
+			// project goalSeekingDir on the boid Frame plane
+			// Project new pBoid.position on the sphere along the radius direction from the center of
+		// sphere. Note that pBoid.position is alos relative to the center of the sphere.
+
+			// Find the tagent component of goalSeekingDir
+			float3 normalDir = normalize(pBoid.position);
+
+			//pBoid.position = _MaxDomainRadius * dirFromCenter;
+			//float3 normalComponent = dot(dirFromCenter, goalSeekingDir) * dirFromCenter
+			//float3 tangentialGoalSeekingDir = normalize(goalSeekingDir - normalComponent);
+
+			float3 tangentialGoalSeekingDir = normalize(getTangentComponent(goalSeekingDir,  normalDir));
+
+
+			//float3 dirFromCenter = normalize(pBoid.position - float3(0, 0, 0));
+
+			////pBoid.position = _MaxDomainRadius * dirFromCenter;
+
+			//float3 modifiedGoalSeekingDir 
+			//	= normalize( goalSeekingDir - 
+			//	             dot(dirFromCenter,  goalSeekingDir) * dirFromCenter  );
+
+			pNewHeadVec = flockingHeadDir * flockingWeight
+				+ circulationDir * circulationWeight + tangentialGoalSeekingDir * goalSeekingWeight;
+
+
+		}
+		// compute the new position of pBoid
+
+		pBoid.duration = _DeltaTime;
+
+		//pBoid.headDir = normalize(pNewHeadVec);
+
+		// The newly computed direction  of  pBoid.headDir is approximately on the tangent plane
+		// at the position of the boid. So we need to project the direction on the tangent plane.
+		//  and then move along the tangent plane just a little bit
+		
+		// If you go along the newly computed direction, you would leave your spherical surface domain
+		// So, reproject the new position on the sphere
+
+		// The local frame is pBoid.boidFrame, whose columns are three axes of the frame:
+		// Project headDir along the "up" direction, which is the first axis, the direction of  position
+		// from the origin of the sphere.
+
+		// Find the vertical component
+		//// globalHeadDir has been adjusted so that they are on the tangent plane of the boid
+		/*float3 veticalAxis = float3(pBoid.boidFrame[0], pBoid.boidFrame[1], pBoid.boidFrame[2]);
+
+		float3 verticalComponent = dot(verticalAxis, pNewHeadVec) * vertialAxis;
+		float3 horizontalComponent = pBoid.headDir - verticalComponent;
+
+		float3 modifiedHeadVec = horizontalComponent;*/
+
+		pBoid.headDir = normalize(pNewHeadVec );
+		
+		pBoid.speed = _SpeedFactor * length(pNewHeadVec );
+
+		pBoid.speed = clamp(pBoid.speed, _MinSpeed, _MaxSpeed);
+
+		// ipdate the position
+
+		//pBoid.speed is cm per frame
+		float3 pNewVel = pBoid.speed * pBoid.headDir;
+
+		//pBoid.position += pNewVel * _SpeedFactor * pBoid.duration;
+
+		float3 prevPos = pBoid.position;		
+
+		pBoid.position += pNewVel * pBoid.duration;
+		
+	
+		// Project new pBoid.position on the tangent plane of the sphere at the new location.
+		// The new location should be on the surface of the sphere!
+
+		float3 normalDir = normalize(pBoid.position );
+
+		float3 pBoidPosOnTangentPlane = _MaxDomainRadius * normalDir;
+		
+		pBoid.position = pBoidPosOnTangentPlane;
+
+		pBoid.scale = pBoid.scale * _ScaleFactor;
+
+		//Project pBoid.boidFrame onto the tangent plane at pBoid.position
+		// => Project the headDir onto the tangent plane and make it the new Z axis.
+		// The direction of pBoid.position will be the new Y axis (the back direction of the boid)
+		// The cross product (left hand rule) of Y and Z will the X axis pointing to the right direction
+
+		float3 newZAxis = normalize( getTangentComponent(pBoid.headDir, normalDir) ) ;
+		float3 newYAxis = normalDir;
+		float3 newXAxis = -cross(newYAxis, newZAxis); // use the left hand rule to follow
+		                                              // Unity
+		//float3x3 n = float3x3(row0, row1, row2); // sets rows of matrix n
+		//cf https://docs.unity3d.com/ScriptReference/Material.SetMatrix.html?_ga=2.197958058.467342056.1573866422-1662555742.1530823204
+
+		float4 firstRow = float4(newXAxis[0], newYAxis[0], newZAxis[0], pBoid.position[0]);
+		float4 secondRow = float4(newXAxis[1], newYAxis[1], newZAxis[1], pBoid.position[1]);
+		float4 thirdRow = float4(newXAxis[2], newYAxis[2], newZAxis[2], pBoid.position[2]);
+		float4 fourthRow = float4(0,             0,       0,                 1);
+
+		pBoid.boidFrame = float4x4(firstRow, secondRow, thirdRow, fourthRow);
+
+		computeBoidColor(pBoid); // both HSL and RBG colors
+
+		//postProcessBoidState(prevPos, pBoid); The boids are already constrained to be on the
+		// sphere by the motion rules used above. But the boids that entered the ceiling hole
+		// are supposed to go down to the bottom of the lower hemisphere.
+
+		float apexRadius = length(float3(pBoid.position.x, 0, pBoid.position.z));
+		if ( pBoid.wallNo == 1 && apexRadius <= _CeilingInnerRadius)
+		{
+			pBoid.wallNo = 0; // go to the lower hemisphere
+			moveBoidsToLowerHemisphere(pBoid);
+		}
+
+
+		_BoidBuffer[pId] = pBoid; // copy the new Boid to the original structure _BoidBuffer[pid]
+		return;
+	//} // 	if (pBoid.wallNo  1) 
+
+
+	//To pass a modifiable function parameter in C, the programmer must
+	//	explicitly use pointers.C++ provides a built‐in pass‐by‐reference mechanism
+	//	that avoids the need to explicitly use pointers, but this mechanism still
+	//	implicitly assumes that the hardware supports pointers.
+
+	//Cg must use a different mechanism because the vertex and fragment hardware of the GPU
+	//	does not support the use of pointers.
+
+	//Cg passes modifiable function parameters by value‐result, instead of by reference.
+	//The difference between these two methods is subtle; it is only apparent when two function
+	//	parameters are aliased by a function call.In Cg, the two parameters have
+	//	separate storage in the function, whereas in C++ they would share storage.
+	//	To reinforce this distinction, Cg uses a different syntax than C++ to declare
+	//	function parameters that are modified :
+	//function blah1(out float x); // x is output-only
+	//function blah2(inout float x); // x is input and output
+	//function blah3(in float x); // x is input-only
+	//function blah4(float x); // x is input-only (default, as in
+	//C)
+
+	return;
+} // SimulateBoids()
+
+
+// Use a single boid buffer for the ceiling and the ground, 
+// but use a flag to indicate whether the boid is on the ground or on the ceiling
+
