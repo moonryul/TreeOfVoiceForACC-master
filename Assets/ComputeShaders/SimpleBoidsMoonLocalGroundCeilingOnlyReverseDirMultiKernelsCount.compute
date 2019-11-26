@@ -14,6 +14,7 @@ struct Boid
 	//float3 wallOrigin; // the reference position of the wall (the boid reference frame) on which the boid is 
 	//float3  eulerAngles; // the rotation of the boid reference frame
 	float4x4 boidFrame; // also includes position
+	float3  normal;
 	float3  position; // the position of the  boid in the boid reference frame
 	float3  scale;
 	float3  headDir; // the head angle of the  boid on the local plane: from 0 to 2 *PI
@@ -505,7 +506,6 @@ float3 hslToHsv(float H, float S, float L)
 void computeBoidColor(inout Boid pBoid) 
 {
 
-
 	float h, hDeg, s, l,  alpha;
 	
 	float angDeg;
@@ -776,18 +776,18 @@ void moveBoidsToLowerHemisphere(inout Boid pBoid)
 	//float m20 = m[2][0]; // = 3.1
 	//float m21 = m[2].y; // = 3.2
 
-	float4 XAxis = float4(firstRow[0], secondRow[0], thirdRow[0], fourthRow[0]);
-	float4 YAxis = float4(firstRow[1], secondRow[1], thirdRow[1], fourthRow[1]);
-	float4 ZAxis = float4(firstRow[2], secondRow[2], thirdRow[2], fourthRow[2]);
+	float3 XAxis = float3(firstRow[0], secondRow[0], thirdRow[0]);
+	float3 YAxis = float3(firstRow[1], secondRow[1], thirdRow[1]);
+	float3 ZAxis = float3(firstRow[2], secondRow[2], thirdRow[2]);
 	//float4 Pos   = float4(firstRow[3], secondRow[3], thirdRow[3], fourthRow[4]);
 	// Pos is equal to pBoid.position
 
 
 	pBoid.position = newPosition;
 
-	float4 newZAxis = ZAxis; // the head direction is the same
-	float4 newYAxis = -YAxis; // the up direction is the opposite
-	float4 newXAxis = -XAxis; // the rightward becomes the leftward
+	float3 newZAxis = ZAxis; // the head direction is the same
+	float3 newYAxis = -YAxis; // the up direction is the opposite
+	float3 newXAxis = -XAxis; // the rightward becomes the leftward
 
 	 firstRow = float4(newXAxis[0], newYAxis[0], newZAxis[0], pBoid.position[0]);
 	 secondRow = float4(newXAxis[1], newYAxis[1], newZAxis[1], pBoid.position[1]);
@@ -807,6 +807,7 @@ void moveBoidsToLowerHemisphere(inout Boid pBoid)
 [numthreads(BLOCK_SIZE, 1, 1)]
 void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 {
+	
 	// Process a SINGLE Boid refered to by DTid.x
 
 	const int pId = DTid.x;
@@ -1139,8 +1140,10 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 
 		float3 modifiedHeadVec = horizontalComponent;*/
 
-		pBoid.headDir = normalize(pNewHeadVec );
+		//pBoid.headDir = normalize(pNewHeadVec );
 		
+
+		float3 newHeadDir  = normalize(pNewHeadVec );
 		pBoid.speed = _SpeedFactor * length(pNewHeadVec );
 
 		pBoid.speed = clamp(pBoid.speed, _MinSpeed, _MaxSpeed);
@@ -1148,7 +1151,7 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 		// ipdate the position
 
 		//pBoid.speed is cm per frame
-		float3 pNewVel = pBoid.speed * pBoid.headDir;
+		float3 pNewVel = pBoid.speed * newHeadDir;
 
 		//pBoid.position += pNewVel * _SpeedFactor * pBoid.duration;
 
@@ -1173,8 +1176,8 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 		// The direction of pBoid.position will be the new Y axis (the back direction of the boid)
 		// The cross product (left hand rule) of Y and Z will the X axis pointing to the right direction
 
-		float3 newZAxis = normalize( getTangentComponent(pBoid.headDir, newNormalDir) ) ;
 		float3 newYAxis = newNormalDir;
+		float3 newZAxis = normalize( getTangentComponent(newHeadDir, newNormalDir) ) ;
 		float3 newXAxis = -cross(newYAxis, newZAxis); // use the left hand rule to
 		// the compute rightward basis
 
@@ -1187,6 +1190,7 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 		float4 fourthRow = float4(0,             0,       0,                 1);
 
 		pBoid.boidFrame = float4x4(firstRow, secondRow, thirdRow, fourthRow);
+		pBoid.headDir = newZAxis;
 
 		computeBoidColor(pBoid); // both HSL and RBG colors
 
@@ -1201,6 +1205,7 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 			moveBoidsToLowerHemisphere(pBoid);
 		}
 
+		// get the boidFrameInv from boidFrame
 
 		_BoidBuffer[pId] = pBoid; // copy the new Boid to the original structure _BoidBuffer[pid]
 		return;

@@ -118,7 +118,7 @@ public class LEDMasterController : MonoBehaviour
                 Debug.Log(" send LED array to arduino");
                 for (int i =0; i < m_LEDArray.Length; i++)
                 {
-                    Debug.Log(i + "th byte:" +m_LEDArray[i]);
+                    //Debug.Log(i + "th byte:" +m_LEDArray[i]);
                 }
                 //m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }

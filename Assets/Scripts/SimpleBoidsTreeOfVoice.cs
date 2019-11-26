@@ -193,6 +193,8 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     StreamWriter m_writer;
     FileStream m_oStream;
 
+    string m_path;
+    bool m_fileWritten = false;
 
     //When you create a struct object using the new operator, it gets created and the appropriate constructor is called.
     //Unlike classes, structs can be instantiated without using the new operator. 
@@ -247,7 +249,8 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
         // public Vector3  WallOrigin; // the reference position of the wall (the boid reference frame) on which the boid is 
 
         //public Vector3 EulerAngles; // the rotation of the boid reference frame
-        public Matrix4x4 BoidFrame; // Affine Frame of the Boid, which also includes Position data
+        public Matrix4x4 BoidFrame; // Affine Frame of the Boid, which is equivalent to unity_ObjectToWorld
+        public Vector3 Normal; // The global normal
         public Vector3 Position; // the position of the  boid in the boid reference frame        
 
         public Vector3 Scale; // the scale factors
@@ -315,12 +318,12 @@ private void Awake()
         //    writer.Close();
         //}
 
-        string path = "Assets/Resources/DebugFiles/" + fileName +  fileIndex + ".txt";
+         m_path = "Assets/Resources/DebugFiles/" + fileName +  fileIndex + ".txt";
 
-        File.CreateText(path).Dispose();
+        //File.CreateText(path).Dispose();
 
         ////Write some text to the test.txt file
-        m_writer = new StreamWriter(path, false); // do not append
+        //m_writer = new StreamWriter(path, false); // do not append
         //m_oStream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.None);
         ////m_ioStream = new FileStream(path,
         ////                               FileMode.OpenOrCreate,
@@ -401,7 +404,7 @@ private void Awake()
         // Time.time (and Time.deltaTime) only change their value once per frame.
 
 
-        //Simulate(); // for debugging
+        Simulate(); // for debugging
     }
 
 
@@ -672,7 +675,10 @@ private void Awake()
         //Also by checking the decompiled file of Vector3 on github, I confirmed that Vector3 indeed only consists of 3 floats
                       
 
-        m_BoidBuffer = new ComputeBuffer(MAX_SIZE_OF_BUFFER, Marshal.SizeOf(typeof(BoidData)));
+        m_BoidBuffer = new ComputeBuffer(MAX_SIZE_OF_BUFFER,
+                   Marshal.SizeOf(typeof(BoidData)), ComputeBufferType.Default);
+
+       // Graphics.SetRandomWriteTarget(1, m_BoidBuffer);
 
         m_boidArray = new BoidData[MAX_SIZE_OF_BUFFER];
 
@@ -785,11 +791,13 @@ private void Awake()
             //m_boidArray[i].HeadDir = new Vector3(Mathf.Cos(phiDir), 0.0f, Mathf.Sin(phiDir));
 
             m_boidArray[i].HeadDir = ZAxis;
-                // The HeadDir is defined relative to the boidFrame XZ axes; the actual moving direction
-                //, the global headDir is computed by applying the boidFrame matrix to the local HeadDir
+            // The HeadDir is defined relative to the boidFrame XZ axes; the actual moving direction
+            //, the global headDir is computed by applying the boidFrame matrix to the local HeadDir
 
+            //m_boidArray[i].BoidFrameInv = Matrix4x4.Inverse(boidFrame);
+            //m_boidArray[i].BoidFrameInv = boidFrame.inverse; 
 
-             initRadiusX = Random.Range(MinBoidRadius, MaxBoidRadius); // 0.1 ~ 0.3
+            initRadiusX = Random.Range(MinBoidRadius, MaxBoidRadius); // 0.1 ~ 0.3
              initRadiusY = Random.Range(MinBoidRadius, MaxBoidRadius);
              initRadiusZ = Random.Range(MinBoidRadius, MaxBoidRadius);
 
@@ -1088,99 +1096,122 @@ protected void Simulate() // called from Update()
         //Debug.Log("m_SimulationDeltaT of action plan:");
         //Debug.Log(m_SimulationDeltaT);
 
-     
-        //m_writer.WriteLine("Iteration Num of Simuation:" + totalNumOfSimulations);
-        //m_writer.WriteLine("m_SimulationDeltaT of action plan:" + m_SimulationDeltaT);
-        // StreamWriter(string path, bool append);
-        // writer.WriteLine("Test");
-        //// m_boids.m_BoidBuffer
-       // m_BoidBuffer.GetData(m_boidArray); // used in LEDColorGenController
 
-       // for (int i = 0; i < (int)m_BoidsNum / 100; i++)
-       // {
+        //            // Create a file to write to.
+        //            using (StreamWriter sw = File.CreateText(path))
+        //            {
+        //                sw.WriteLine("Hello");
+        //                sw.WriteLine("And");
+        //                sw.WriteLine("Welcome");
+        //            }
 
-       //     //Debug.Log("boidNo = "); Debug.Log(i);
-       //     m_writer.WriteLine("boidNo = " + i);
-       //     //Debug.Log("boid Wall No = ");
-       //     m_writer.WriteLine("boid Wall No = " + m_boidArray[i].WallNo);
+        m_BoidBuffer.GetData(m_boidArray); // used in LEDColorGenController
 
-       //     // Debug.Log(m_boidArray[i].WallNo);
-       //     //Debug.Log("position = = ");
-       //     //Debug.Log(m_boidArray[i].Position);
-
-       //     m_writer.WriteLine("position = = " + m_boidArray[i].Position);
-
-       //     //Debug.Log("Boid Radius= ");
-       //     //Debug.Log(m_boidArray[i].Position.magnitude);
-
-       //     m_writer.WriteLine("Boid Radius= " + m_boidArray[i].Position.magnitude);
-
-       //     //Debug.Log("Boid color (HSV) = = ");
-       //     //Debug.Log(m_boidArray[i].ColorHSV); // h,s,l ranges from 0 to 1
-       //     m_writer.WriteLine("Boid HSV: (atan2, angDeg, hDeg) = " + m_boidArray[i].ColorHSV);
-
-       //     //Debug.Log("Boid color (RGB computed in shader) = = ");
-       //     //Debug.Log(m_boidArray[i].Color);
-
-       //     if (m_boidArray[i].WallNo == 0)
-       //     {
-       //         m_writer.WriteLine("Boid (_groundMinHue,_groundMaxHue,_groundMinValue," +
-       //             "_groundMaxValue) in Script= " + _groundMinHue + " " +
-       //             _groundMaxHue + " " + _groundMinValue + " " + _groundMaxValue);
-
-       //      }
-       //     else
-       //     {
-       //         m_writer.WriteLine("Boid (_ceilingMinHue,_ceilingMaxHue,_ceilingMinValue," +
-       //            "_ceilingMaxValue) in Script= " + _ceilingMinHue + " " +
-       //            _ceilingMaxHue + " " + _ceilingMinValue + " " + _ceilingMaxValue);
-
-       //     }
-
-       //// }
-
-       //    m_writer.WriteLine("Boid (_minHue,_maxHue,_minValue,_maxValue) in shader= " + m_boidArray[i].Color);
-
-
-           // Color color = Color.HSVToRGB(m_boidArray[i].ColorHSV.x / 360,
-           //                   m_boidArray[i].ColorHSV.y, m_boidArray[i].ColorHSV.z);
-
-
-            ////Debug.Log("color (RGB by Unity API) = = ");
-            ////Debug.Log(color);
-
-           // m_writer.WriteLine("Boid RGB from HSV by Unity API = = " + color);
-
-
-            //    //    //m_boidArray[i].Color = new Vector4(color.r, color.g, color.b, m_boidArray[i].Color.w);
-
-
-       // }//     for (int i = 0; i < (int)m_BoidsNum; i++)
-
-            //BoidBuffer.SetData(m_boidArray); // buffer is R or RW
-
-            /*
-            BoidCountBuffer.GetData(boidCountArray);
-
-            int numOfBoidsWithinBound = 0;
-            for (int i = 0; i < numOfWalls; i++)
+        if (!m_fileWritten)
+        {
+            using (m_writer = File.CreateText(m_path))
             {
-                Debug.LogFormat("WallNo = {0}, num of boids within bound =  {1} , ratio over the total= {2}",
-                               i, boidCountArray[i], boidCountArray[i] / (float)m_BoidsNum);
 
 
-                numOfBoidsWithinBound += boidCountArray[i];
+                m_writer.WriteLine("Iteration Num of Simuation:" + totalNumOfSimulations);
+                m_writer.WriteLine("m_SimulationDeltaT of action plan:" + m_SimulationDeltaT);
+                //StreamWriter(string path, bool append);
+                //writer.WriteLine("Test");
+                // m_boids.m_BoidBuffer
+               
+
+                for (int i = 0; i < (int)m_BoidsNum / 100; i++)
+                {
+
+                    //Debug.Log("boidNo = "); Debug.Log(i);
+                    m_writer.WriteLine("boidNo = " + i);
+                    //Debug.Log("boid Wall No = ");
+                    m_writer.WriteLine("boid Wall No = " + m_boidArray[i].WallNo);
+
+                    Debug.Log(m_boidArray[i].WallNo);
+                    Debug.Log("position = = ");
+                    Debug.Log(m_boidArray[i].Position);
+
+                    m_writer.WriteLine("position = = " + m_boidArray[i].Position);
+
+                    //Debug.Log("Boid Radius= ");
+                    //Debug.Log(m_boidArray[i].Position.magnitude);
+
+                    m_writer.WriteLine("Boid Radius= " + m_boidArray[i].Position.magnitude);
+                    m_writer.WriteLine("Boid Frame=\n " + m_boidArray[i].BoidFrame);
+
+                    //Debug.Log("Boid color (HSV) = = ");
+                    //Debug.Log(m_boidArray[i].ColorHSV); // h,s,l ranges from 0 to 1
+                    // m_writer.WriteLine("Boid HSV: (atan2, angDeg, hDeg) = " + m_boidArray[i].ColorHSV);
+
+                    //     //Debug.Log("Boid color (RGB computed in shader) = = ");
+                    //     //Debug.Log(m_boidArray[i].Color);
+
+                    //     if (m_boidArray[i].WallNo == 0)
+                    //     {
+                    //         m_writer.WriteLine("Boid (_groundMinHue,_groundMaxHue,_groundMinValue," +
+                    //             "_groundMaxValue) in Script= " + _groundMinHue + " " +
+                    //             _groundMaxHue + " " + _groundMinValue + " " + _groundMaxValue);
+
+                    //      }
+                    //     else
+                    //     {
+                    //         m_writer.WriteLine("Boid (_ceilingMinHue,_ceilingMaxHue,_ceilingMinValue," +
+                    //            "_ceilingMaxValue) in Script= " + _ceilingMinHue + " " +
+                    //            _ceilingMaxHue + " " + _ceilingMinValue + " " + _ceilingMaxValue);
+
+                    //     }
+
+                    //// }
+
+                    //    m_writer.WriteLine("Boid (_minHue,_maxHue,_minValue,_maxValue) in shader= " + m_boidArray[i].Color);
 
 
-            }
-
-            Debug.LogFormat("total num within bound= {0}, ratio over the tatal =  {1}",
-                                  numOfBoidsWithinBound, numOfBoidsWithinBound / (float)m_BoidsNum);
-           */
-
-            //Color.HSVToRGB(h,s,v)
-
-        } // Simulate()
+                    // Color color = Color.HSVToRGB(m_boidArray[i].ColorHSV.x / 360,
+                    //                   m_boidArray[i].ColorHSV.y, m_boidArray[i].ColorHSV.z);
 
 
-    } // class SimpleBoids
+                    ////Debug.Log("color (RGB by Unity API) = = ");
+                    ////Debug.Log(color);
+
+                    // m_writer.WriteLine("Boid RGB from HSV by Unity API = = " + color);
+
+
+                    //    //    //m_boidArray[i].Color = new Vector4(color.r, color.g, color.b, m_boidArray[i].Color.w);
+
+
+                }//     for (int i = 0; i < (int)m_BoidsNum; i++)
+
+                    
+
+            } // using 
+            m_fileWritten = true;
+        } // if (!m_fileWritten) 
+
+        //BoidBuffer.SetData(m_boidArray); // buffer is R or RW
+
+        /*
+        BoidCountBuffer.GetData(boidCountArray);
+
+        int numOfBoidsWithinBound = 0;
+        for (int i = 0; i < numOfWalls; i++)
+        {
+            Debug.LogFormat("WallNo = {0}, num of boids within bound =  {1} , ratio over the total= {2}",
+                           i, boidCountArray[i], boidCountArray[i] / (float)m_BoidsNum);
+
+
+            numOfBoidsWithinBound += boidCountArray[i];
+
+
+        }
+
+        Debug.LogFormat("total num within bound= {0}, ratio over the tatal =  {1}",
+                              numOfBoidsWithinBound, numOfBoidsWithinBound / (float)m_BoidsNum);
+       */
+
+        //Color.HSVToRGB(h,s,v)
+
+    } // Simulate()
+
+
+} // class SimpleBoids

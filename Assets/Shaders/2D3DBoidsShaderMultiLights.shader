@@ -90,6 +90,7 @@
             {
 		  
 			float4x4 boidFrame;
+			float3   normal;
 			float3  position; // the position of the  boid in the boid reference frame 	    
 
 		     float3  scale;
@@ -126,8 +127,8 @@
 			//float   Use3DBoids;
 
         #if SHADER_TARGET >= 45
-            //RWStructuredBuffer<Boid> _BoidBuffer;	 // RW buffer does not work
-		    StructuredBuffer<Boid> _BoidBuffer;	
+            StructuredBuffer<Boid> _BoidBuffer;	 // RW buffer does not work
+		    //RWStructuredBuffer<Boid> _BoidBuffer : 	register(u1);
 
 			//RWStructuredBuffer<float4x4> _MatrixBuffer : register(u1);
 			//The register(u1)represents which internal gpu registrar 
@@ -298,6 +299,10 @@
 				//o.normal = normalize( mul( R, v.normal) ) ;
 				o.normal = normalize(mul(v.normal, (1 / scale0) * Rinv));
 
+				//b.normal = o.normal;
+
+				//o.normal = normalize(mul(float4(v.normal, 0), b.boidFrameInv).xyz);
+
 
 
 				//o.normal = normalize(mul(v.normal, inverse3x3(L)));
@@ -340,7 +345,7 @@
 				//UNITY_SETUP_INSTANCE_ID(i); //  necessary only if any instanced properties are going to be accessed in the fragment Shader
 
 
-				float3 normalDirection = i.normal;
+				float3 normalDirection = -i.normal;
 
 				float3 viewDirection = normalize(
 					_WorldSpaceCameraPos - i.posWorld.xyz);
@@ -377,14 +382,14 @@
 
 
 				//// for debugging for the directinal light
-				float lightToNormal = dot(normalDirection, lightDirection);
-				if (lightToNormal < 0) {
-					//return float4(1, 0, 0, 1);
-					return float4(0, 0, 0, 1); // for debugging
+				//float lightToNormal = dot(normalDirection, lightDirection);
+				//if (lightToNormal < 0) {
+				//	//return float4(1, 0, 0, 1);
+				//	return float4(0, 0, 0, 1); // for debugging
 
-				}
-				else return //float4(0, 1, 0, 1); // for debugging
-					float4(0, 0, 0, 1);
+				//}
+				//else return //float4(0, 1, 0, 1); // for debugging
+				//	float4(0, 0, 0, 1);
 
 				float3 diffuseReflection =
 					attenuation * _LightColor0.rgb * i.color.rgb
@@ -504,6 +509,7 @@
 			 {
 
 				float4x4 boidFrame;
+				float3   normal;
 				float3  position; // the position of the  boid in the boid reference frame 	    
 
 				 float3  scale;
@@ -540,7 +546,7 @@
 				//float   Use3DBoids;
 
 			#if SHADER_TARGET >= 45
-				//RWStructuredBuffer<Boid> _BoidBuffer;	 // RW buffer does not work
+				//RWStructuredBuffer<Boid> _BoidBuffer : register(u1);	 // RW buffer does not work
 				StructuredBuffer<Boid> _BoidBuffer;
 			#endif
 
@@ -612,6 +618,7 @@
 						   //It actually doesn't matter. Cross product still works the same
 
 						   // shaders with unity3D: http://xboxoneindiedevelopment.blogspot.kr/2015/02/coming-from-shaders-in-xna-to-shaders.html
+				//https://docs.unity3d.com/Manual/SL-PlatformDifferences.html
 
 				v2f vert(appdata_full v, uint instanceID : SV_InstanceID)
 						   {
@@ -683,8 +690,8 @@
 
 							   //o.normal = normalize( mul( R, v.normal )) ; // for debugging
 							   o.normal = normalize( mul(v.normal, (1 / scale0) * Rinv) );
-
-
+							   //b.normal = o.normal;
+							   //o.normal = normalize(mul(float4(v.normal, 0), b.boidFrameInv).xyz);
 							   //o.normal = normalize(mul(v.normal, inverse3x3(L)));
 
 							   // // just pass the texture coordinate
@@ -723,7 +730,7 @@
 							   //int unity_InstanceID;
 							   //UNITY_SETUP_INSTANCE_ID(i); //  necessary only if any instanced properties are going to be accessed in the fragment Shader
 
-							   float3 normalDirection = i.normal;
+							   float3 normalDirection = -i.normal;
 
 							   float3 viewDirection = normalize(
 								   _WorldSpaceCameraPos - i.posWorld.xyz);
@@ -759,12 +766,12 @@
 							   float3 ambientLighting = float3(0, 0, 0);
 
 							   //// for debugging for the point light
-							   float lightToNormal = dot(normalDirection, lightDirection);
-							   if (lightToNormal < 0) {
-								   return float4(1, 0, 0, 1);
+							   //float lightToNormal = dot(normalDirection, lightDirection);
+							   //if (lightToNormal < 0) {
+								  // return float4(1, 0, 0, 1);
 
-							   }
-							   else return float4(0, 1, 0, 1); // for debugging
+							   //}
+							   //else return float4(0, 1, 0, 1); // for debugging
 
 							   float3 diffuseReflection =
 								   attenuation * _LightColor0.rgb * i.color.rgb

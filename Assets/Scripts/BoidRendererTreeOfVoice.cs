@@ -8,7 +8,12 @@ using System;
 using System.Runtime.InteropServices;
 public class BoidRendererTreeOfVoice : MonoBehaviour
 {
-    bool m_fileClosed = false;
+
+    const int MAX_SIZE_OF_BUFFER = 10000;
+    public SimpleBoidsTreeOfVoice.BoidData[] m_boidArray;
+
+
+    bool m_fileWritten= false;
     // Cameras for DrwaMeshInstanced()
 
     Camera m_MainCamera, m_CameraToGround, m_CameraToCeiling, m_CameraToFrontWall;
@@ -99,22 +104,27 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
     StreamWriter  m_writer;
     FileStream m_oStream;
+    string m_path;
 
     private void Awake()
     { // initialize me
-        m_fileClosed = false;
+
+        m_boidArray = new SimpleBoidsTreeOfVoice.BoidData[MAX_SIZE_OF_BUFFER];
+
+
+        m_fileWritten = false;
 
         // DEBUG code
-        string fileName = "SimpleBoidRender";
+        string fileName = "SimpleBoidRenderer";
         string fileIndex = System.DateTime.Now.ToString("yyyyMMddHHmmss");
         fileIndex.Replace(" ", string.Empty);
         //fileIndex = string.Join("",
         //      fileIndex.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
-        string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
+        m_path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
 
-        File.CreateText(path).Dispose();
+       // File.CreateText(path).Dispose();
         //Write some text to the test.txt file
-        m_writer = new StreamWriter(path, false); // do not append
+        //m_writer = new StreamWriter(path, false); // do not append
         //m_ioStream = new FileStream(path,
         //                               FileMode.OpenOrCreate,
         //                               FileAccess.ReadWrite,
@@ -242,11 +252,25 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
             {
                 m_boidInstanceMesh = m_instanceMeshSphere;
                 m_boidInstanceMesh.RecalculateNormals();
-//                Normals are calculated from all shared vertices.
+                //                Normals are calculated from all shared vertices.
 
-//                 Meshes sometimes don't share all vertices. For example,
-//                 a vertex at a UV seam is split into two vertices, so the RecalculateNormals function creates 
-//                 normals that are not smooth at the UV seam.
+                //                 Meshes sometimes don't share all vertices. For example,
+                //                 a vertex at a UV seam is split into two vertices, so the RecalculateNormals function creates 
+                //                 normals that are not smooth at the UV seam.
+
+                // draw the mesh inforation
+
+                int numOfVertices = m_boidInstanceMesh.vertexCount;
+                using (m_writer = File.CreateText(m_path))
+                {
+                    for (int i = 0; i < numOfVertices; i++)
+                    {
+                        m_writer.WriteLine(i + "th vertex pos=" + m_boidInstanceMesh.vertices[i]);
+                        m_writer.WriteLine(i + "th vertex normal=" + m_boidInstanceMesh.normals[i]);
+
+
+                    }
+                } // using 
             }
 
 
@@ -320,9 +344,9 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
 
         //ComputeBufferType.Default: In HLSL shaders, this maps to StructuredBuffer<T> or RWStructuredBuffer<T>.
-        m_MatrixBuffer = new ComputeBuffer(m_numOfShaderMatrices,
-                                           Marshal.SizeOf(typeof(Matrix4x4)), 
-                                            ComputeBufferType.Default);
+        //m_MatrixBuffer = new ComputeBuffer(m_numOfShaderMatrices,
+        //                                   Marshal.SizeOf(typeof(Matrix4x4)), 
+        //                                    ComputeBufferType.Default);
 
         ////(4*4) * sizeof(float) == Marshal.SizeOf(typeof(Matrix4x4))
         ///
@@ -340,10 +364,10 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
        
 
 
-        m_MatrixArray = new Matrix4x4[m_numOfShaderMatrices];
+        //m_MatrixArray = new Matrix4x4[m_numOfShaderMatrices];
 
 
-        m_MatrixBuffer.SetData(m_MatrixArray);
+        //m_MatrixBuffer.SetData(m_MatrixArray);
        
         
         // get the reference to SimpleBoidsTreeOfVoice
@@ -414,6 +438,8 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //m_boidInstanceMaterial.SetVector("CeilingMaxCorner", m_boids.CeilingMaxCorner);
         //m_boidInstanceMaterial.SetVector("CeilingMinCorner", m_boids.CeilingMinCorner);
 
+        //Graphics.SetRandomWriteTarget(1, m_boids.m_BoidBuffer);
+
         m_boidInstanceMaterial.SetBuffer("_BoidBuffer", m_boids.m_BoidBuffer);
         // m_boids.BoidBuffer is ceated in SimpleBoids.cs
         // This buffer is shared between CPU and GPU
@@ -447,6 +473,15 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
     private void RenderInstancedMesh()
 
 	{
+        //int layer = 0;
+        //Graphics.DrawMeshInstancedIndirect(
+        //   m_boidInstanceMesh,
+        //   0,
+        //   m_boidInstanceMaterial, // This material defines the shader which receives instanceID
+        //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+        //   m_boidArgsBuffer, // this contains the information about the instances: see below
+        //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToCeiling
+        //   );
 
 
         Graphics.DrawMeshInstancedIndirect(
@@ -521,7 +556,7 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //A native plugin is still the only way around it(confirmed by unity support)
 
         //Just FYI, if anyone finds this thread looking for a solution. 
-        MyIO.DebugLog("Shader Matrices Debug");
+        // MyIO.DebugLog("Shader Matrices Debug");
         //int numOfShaderMatrices = 3; // 
 
         //_MatrixBuffer[0] = UNITY_MATRIX_M;
@@ -529,11 +564,51 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //_MatrixBuffer[2] = UNITY_MATRIX_P;
 
         // for debugging
+
+
+
         //if (!m_fileClosed)
         //{
         //    // get the matrix array from the compute buffer associated with m_boidInstanceMaterial
         //    // of DrawMeshInstancedIndirect()
-        //    m_MatrixBuffer.GetData(m_MatrixArray);
+        //    //m_MatrixBuffer.GetData(m_MatrixArray);
+        //m_boids.m_BoidBuffer.GetData(m_boidArray);
+
+        //if (!m_fileWritten)
+        //{
+        //    using (m_writer = File.CreateText(m_path))
+        //    {
+
+
+        //        //m_writer.WriteLine("Iteration Num of Simuation:" + totalNumOfSimulations);
+        //        //m_writer.WriteLine("m_SimulationDeltaT of action plan:" + m_SimulationDeltaT);
+        //        //StreamWriter(string path, bool append);
+        //        //writer.WriteLine("Test");
+        //        // m_boids.m_BoidBuffer
+
+
+        //        for (int i = 0; i < (int)m_boids.m_BoidsNum / 100; i++)
+        //        {
+
+        //            //Debug.Log("boidNo = "); Debug.Log(i);
+        //            m_writer.WriteLine("boidNo = " + i);
+        //            //Debug.Log("boid Wall No = ");
+        //            m_writer.WriteLine("boid Wall No = " + m_boidArray[i].WallNo);
+
+        //            Debug.Log(m_boidArray[i].WallNo);
+        //            Debug.Log("position = = ");
+        //            Debug.Log(m_boidArray[i].Position);
+
+
+        //            m_writer.WriteLine("position = = " + m_boidArray[i].Position);
+
+        //            m_writer.WriteLine("normal = = " + m_boidArray[i].Normal);
+        //        }
+        //    } // using 
+
+        //    m_fileWritten = true;
+        //} // if (!m_fileWritten)
+
 
         //    m_writer.WriteLine("main Camera: \n");
 
@@ -555,7 +630,7 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //    0, null, ShadowCastingMode.Off, false, layer, m_CameraToGround
         //    );
 
-     
+
 
 
         //if (!m_fileClosed)
@@ -574,7 +649,7 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
 
 
-
+        //int layer = 0;
         //Graphics.DrawMeshInstancedIndirect(
         //   m_boidInstanceMesh,
         //   0,
@@ -584,7 +659,7 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToCeiling
         //   );
 
-       
+
 
         //if (!m_fileClosed)
         //{
@@ -611,7 +686,7 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToFrontWall
         //   );
 
-       
+
 
         //if (!m_fileClosed)
         //{
@@ -627,12 +702,6 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
         //}
 
-        if (!m_fileClosed)
-        {
-            m_writer.Close();
-           
-            m_fileClosed = true;
-        }
 
 
         // _boidArgs = 

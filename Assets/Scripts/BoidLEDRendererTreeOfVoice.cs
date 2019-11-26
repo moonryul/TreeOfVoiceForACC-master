@@ -11,7 +11,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
 {
 
     // Update is called once per frame
-    bool m_fileClosed = false;
+    bool m_fileWritten = false;
     // Cameras for DrwaMeshInstanced()
 
     Camera m_MainCamera, m_CameraToGround, m_CameraToCeiling, m_CameraToFrontWall;
@@ -82,11 +82,12 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
     BoidLEDData[] m_BoidLEDArray;
     StreamWriter m_writer;
     FileStream m_oStream;
+    string m_path;
 
     private void Awake()
     {
 
-        m_fileClosed = false;
+        m_fileWritten = false;
         // DEBUG code
         string fileName = "LEDBoidInfo";
         //https://rocabilly.tistory.com/34
@@ -96,12 +97,12 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
         //fileIndex = string.Join("",
         //      fileIndex.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
 
-        string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
+        m_path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
 
 
-        File.CreateText(path).Dispose();
+       //File.CreateText(path).Dispose();
         ////Write some text to the test.txt file
-        m_writer = new StreamWriter(path, false); // do not append
+        //m_writer = new StreamWriter(path, false); // do not append
 
 
 
@@ -471,144 +472,137 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
         //_MatrixBuffer[1] = UNITY_MATRIX_V;
         //_MatrixBuffer[2] = UNITY_MATRIX_P;
 
+      
+
+                    //if (!m_fileClosed)
+                    //{
+                    //    // get the matrix array from the compute buffer associated with m_boidInstanceMaterial
+                    //    // of DrawMeshInstancedIndirect()
+                    //    m_MatrixBuffer.GetData(m_MatrixArray);
+                    //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
+                    //    m_writer.WriteLine("main Camera: \n");
+
+            //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+
+            //    {
+            //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+
+            //    }
 
 
-        //if (!m_fileClosed)
-        //{
-        //    // get the matrix array from the compute buffer associated with m_boidInstanceMaterial
-        //    // of DrawMeshInstancedIndirect()
-        //    m_MatrixBuffer.GetData(m_MatrixArray);
-        //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
-        //    m_writer.WriteLine("main Camera: \n");
+            //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
 
-        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+            //    {
+            //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
 
-        //    {
-        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+            //    }
 
-        //    }
-
-
-        //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
-
-        //    {
-        //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
-
-        //    }
-
-        //}
-
-
-
-        //Graphics.DrawMeshInstancedIndirect(
-        //    m_boidInstanceMesh,
-        //    0,
-        //    m_boidLEDInstanceMaterial, // This material defines the shader which receives instanceID
-        //    new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
-        //    m_boidLEDArgsBuffer, // this contains the information about the instances: see below
-        //    0, null, ShadowCastingMode.Off, false, layer, m_CameraToGround
-        //    );
-
-        
+            //}
 
 
 
-        //if (!m_fileClosed)
-        //{
-        //    m_MatrixBuffer.GetData(m_MatrixArray);
-        //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
-        //    m_writer.WriteLine("cameraToGround: \n");
-
-        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
-
-        //    {
-        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
-
-        //    }
-        //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
-
-        //    {
-        //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
-
-        //    }
-
-        //}
+            //Graphics.DrawMeshInstancedIndirect(
+            //    m_boidInstanceMesh,
+            //    0,
+            //    m_boidLEDInstanceMaterial, // This material defines the shader which receives instanceID
+            //    new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+            //    m_boidLEDArgsBuffer, // this contains the information about the instances: see below
+            //    0, null, ShadowCastingMode.Off, false, layer, m_CameraToGround
+            //    );
 
 
 
 
-        //Graphics.DrawMeshInstancedIndirect(
-        //   m_boidInstanceMesh,
-        //   0,
-        //   m_boidLEDInstanceMaterial, // This material defines the shader which receives instanceID
-        //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
-        //   m_boidLEDArgsBuffer, // this contains the information about the instances: see below
-        //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToCeiling
-        //   );
 
-        
+            //if (!m_fileClosed)
+            //{
+            //    m_MatrixBuffer.GetData(m_MatrixArray);
+            //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
+            //    m_writer.WriteLine("cameraToGround: \n");
 
-        //if (!m_fileClosed)
-        //{
-        //    m_MatrixBuffer.GetData(m_MatrixArray);
-        //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
+            //    for (int i = 0; i < m_numOfShaderMatrices; i++)
 
-        //    m_writer.WriteLine("CameraToCeiling: \n");
+            //    {
+            //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
 
-        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+            //    }
+            //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
 
-        //    {
-        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+            //    {
+            //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
 
-        //    }
-        //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
+            //    }
 
-        //    {
-        //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
-
-        //    }
-        //}
+            //}
 
 
-        //Graphics.DrawMeshInstancedIndirect(
-        //   m_boidInstanceMesh,
-        //   0,
-        //   m_boidLEDInstanceMaterial, // This material defines the shader which receives instanceID
-        //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
-        //   m_boidLEDArgsBuffer, // this contains the information about the instances: see below
-        //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToFrontWall
-        //   );
 
-        
 
-        //if (!m_fileClosed)
-        //{
-        //    m_MatrixBuffer.GetData(m_MatrixArray);
-        //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
+            //Graphics.DrawMeshInstancedIndirect(
+            //   m_boidInstanceMesh,
+            //   0,
+            //   m_boidLEDInstanceMaterial, // This material defines the shader which receives instanceID
+            //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+            //   m_boidLEDArgsBuffer, // this contains the information about the instances: see below
+            //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToCeiling
+            //   );
 
-        //    m_writer.WriteLine("CameraToFrontWall: \n");
 
-        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
 
-        //    {
-        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+            //if (!m_fileClosed)
+            //{
+            //    m_MatrixBuffer.GetData(m_MatrixArray);
+            //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
 
-        //    }
-        //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
+            //    m_writer.WriteLine("CameraToCeiling: \n");
 
-        //    {
-        //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
+            //    for (int i = 0; i < m_numOfShaderMatrices; i++)
 
-        //    }
+            //    {
+            //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
 
-        //}
-        if (!m_fileClosed)
-        {
-            m_writer.Close();
+            //    }
+            //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
+
+            //    {
+            //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
+
+            //    }
+            //}
+
+
+            //Graphics.DrawMeshInstancedIndirect(
+            //   m_boidInstanceMesh,
+            //   0,
+            //   m_boidLEDInstanceMaterial, // This material defines the shader which receives instanceID
+            //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+            //   m_boidLEDArgsBuffer, // this contains the information about the instances: see below
+            //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToFrontWall
+            //   );
+
+
+
+            //if (!m_fileClosed)
+            //{
+            //    m_MatrixBuffer.GetData(m_MatrixArray);
+            //    m_LEDBoidPosBuffer.GetData(m_LEDBoidPosArray);
+
+            //    m_writer.WriteLine("CameraToFrontWall: \n");
+
+            //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+
+            //    {
+            //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+
+            //    }
+            //    for (int i = 0; i < m_LEDColorGenController.m_totalNumOfLEDs; i++)
+
+            //    {
+            //        m_writer.WriteLine(i + "th LED pos=\n" + m_LEDBoidPosArray[i]);
+
+            //    }
+
        
-            m_fileClosed = true;
-        }
-
      
 
         //Graphics.DrawMeshInstancedIndirect(
