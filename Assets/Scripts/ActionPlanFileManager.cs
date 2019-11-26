@@ -10,7 +10,7 @@ using SimpleFileBrowser;
 
 //using System.Windows.Forms;
 using System.IO;
-using System.Text;
+
 using System.Collections.Generic;
 
 using UnityEngine.EventSystems;

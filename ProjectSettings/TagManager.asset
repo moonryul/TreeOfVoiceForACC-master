@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - FrontWall
+  - CeilingWall
+  - GroundWall
+  - CameraToGround
+  - CameraToCeiling
+  - CameraToFrontWall
   layers:
   - Default
   - TransparentFX

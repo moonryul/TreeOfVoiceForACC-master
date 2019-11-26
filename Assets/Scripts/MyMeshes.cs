@@ -40,8 +40,16 @@ public class CircleMesh //: MonoBehaviour
 
         m_mesh.vertices = m_vertices3D;
         m_mesh.triangles = m_indices;
-        m_mesh.RecalculateNormals();
+        m_mesh.RecalculateNormals(); // c Vector3[] normals { get; set; }
         m_mesh.RecalculateBounds();
+
+        // reverse the normals of the circle mesh; In the original, the normals point up
+        // change it down.
+
+        for (int i =0; i < m_mesh.vertexCount; i++)
+        {
+            m_mesh.normals[i] = -m_mesh.normals[i];
+        }
 
 
     } // CircleMesh constructor
@@ -296,6 +304,7 @@ public class CylinderMesh
         }
 
         // Top cap
+
         uvs[u++] = new Vector2(0.5f, 0.5f);
         while (u <= nbSides * 2 + 1)
         {

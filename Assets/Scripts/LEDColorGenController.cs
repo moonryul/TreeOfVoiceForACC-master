@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Runtime.InteropServices;
-
+using System;
+using System.IO;
 using Random = UnityEngine.Random;
 
 public class LEDColorGenController : MonoBehaviour
@@ -73,8 +74,7 @@ public class LEDColorGenController : MonoBehaviour
     public SimpleBoidsTreeOfVoice m_boids;
     public ActionPlanController m_actionPlanController;
 
-    // 보이드의 수
-    public float m_BoidsNum;
+   
 
     public int m_totalNumOfLEDs;
 
@@ -83,7 +83,7 @@ public class LEDColorGenController : MonoBehaviour
 
     public float m_LEDChainHeight = 5; // the height of the LED chain 
 
-    public float m_HemisphereGroundPosition = 0;
+    public float m_Hemisphere = 1;
 
     // m_HemisphereGroundPosition is the reference position. If it is positive or zero,
     // the hemisphere above this position will be used to sample LED colors
@@ -155,8 +155,39 @@ public class LEDColorGenController : MonoBehaviour
     //m_neuroHeadSetController.onAverageSignalReceived += m_ledColorGenController.UpdateLEDResponseParameter;
     //m_irSensorMasterController.onAverageSignalReceived += m_ledColorGenController.UpdateColorBrightnessParameter;
 
+    StreamWriter m_writer;
+    FileStream m_oStream;
+
     private void Awake()
     {// initialize me
+
+        // DEBUG code
+        string fileName = "LEDBoidGen";
+
+        //"yyyy.MM.dd.HH.mm.ss"
+        string fileIndex = System.DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+
+        string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
+
+
+        File.CreateText(path).Dispose();
+        //FileStream fileStream = new FileStream(@"file_no.txt",
+        //                               FileMode.OpenOrCreate,
+        //                               FileAccess.ReadWrite,
+        //                               FileShare.None);
+
+        //Write some text to the test.txt file
+         m_writer = new StreamWriter(path, false); // do not append
+        //m_ioStream = new FileStream(path,
+        //                               FileMode.OpenOrCreate,
+        //                               FileAccess.ReadWrite,
+        //                               FileShare.None);
+
+        //m_oStream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.None);
+        //m_writer = new System.IO.StreamWriter(m_oStream);
+
+
+
 
         m_totalNumOfLEDs = m_firstChain  + m_secondChain
                           + m_thirdChain + m_fourthChain;
@@ -180,24 +211,18 @@ public class LEDColorGenController : MonoBehaviour
         if (m_BoidLEDComputeShader == null)
         {
             Debug.LogError("BoidLEDComputeShader  should be set in the inspector");
-            Application.Quit();
-            //return;
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+#endif
         }
 
 
         m_kernelIDLED = m_BoidLEDComputeShader.FindKernel("SampleLEDColors");
 
 
-        // m_BoidLEDComputeShader.SetInt("_SamplingWall", m_samplingWall);
-        // m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
-
-
-
-      
-        m_BoidLEDComputeShader.SetFloat("_MinChainRadius", m_startingRadiusOfInnerChain);
-        m_BoidLEDComputeShader.SetFloat("_MaxChainRadius", m_endingRadiusOfOuterChainThreeTurns);
-
-        m_BoidLEDComputeShader.SetFloat("_HeimisphereGroundPosition", m_HemisphereGroundPosition);
         
         //  m_BoidLEDRenderDebugBuffer = new ComputeBuffer(m_totalNumOfLEDs,
         //                                  4 * sizeof(float), ComputeBufferType.Default);
@@ -248,12 +273,22 @@ public class LEDColorGenController : MonoBehaviour
 
         if (m_boids== null)
         {
-            Debug.LogError("impleBoidsTreeOfVoice component should be added to CommHub");
+            Debug.LogError("SimpleBoidsTreeOfVoice component should be added to CommHub");
             // Application.Quit();
-            return;
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+#endif
+           
         }
 
 
+        m_BoidLEDComputeShader.SetFloat("_MinChainRadius", m_startingRadiusOfInnerChain);
+        m_BoidLEDComputeShader.SetFloat("_MaxChainRadius", m_endingRadiusOfOuterChainThreeTurns);
+
+        m_BoidLEDComputeShader.SetInt("_Hemisphere", (int)Mathf.Round(m_Hemisphere));
 
         m_BoidLEDComputeShader.SetFloat("_MaxDomainRadius", m_boids.m_MaxDomainRadius);
         m_BoidLEDComputeShader.SetFloat("_MinDomainRadius", m_boids.m_MinDomainRadius);
@@ -383,14 +418,17 @@ public class LEDColorGenController : MonoBehaviour
             // of the 2D circle boid.
 
 
-            Vector3 position = m_BoidLEDArray[i].Position ;
-            Vector3 YAxis = position.normalized; // the positive z axis which looks to the center
-                                                 //   The negative z is the normal vector of the 2D circle mesh.
+            Vector3 position = m_BoidLEDArray[i].Position;
+            Vector3 YAxis = position.normalized; // The direction vector of the boid
+                                                 // is considered as the up vector of the boid frame.
 
-            Vector3 ZAxis = Vector3.Cross(YAxis, Vector3.up);
-            // X = perpendicular to the y axis and up, and is assumed to point to the right of the boid
+            Vector3 XAxis = Vector3.Cross(YAxis, Vector3.up); // XAxis = perpendicular to the
+            // plane formed by the boid up and the global up. It is the rightward basis
+            // left hand rule
+            // 
 
-            Vector3 XAxis = Vector3.Cross(YAxis, ZAxis);
+            Vector3 ZAxis = Vector3.Cross(XAxis, YAxis);  // the forward direction 
+
 
             Matrix4x4 boidFrame = new Matrix4x4();
             // XAxis, YAxis, ZAxis become the first, second, third columns of the boidFrame matrix
@@ -399,7 +437,9 @@ public class LEDColorGenController : MonoBehaviour
             boidFrame.SetColumn(2, new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f));
             boidFrame.SetColumn(3, new Vector4(position[0], position[1], position[2], 1.0f));
 
-            m_BoidLEDArray[i].BoidFrame = boidFrame;
+            m_BoidLEDArray[i].BoidFrame = boidFrame; // affine frame
+
+            
 
             m_BoidLEDArray[i].HeadDir = ZAxis;
 
@@ -408,10 +448,13 @@ public class LEDColorGenController : MonoBehaviour
             float initRadiusY = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
             float initRadiusZ = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
 
-                                  
-            m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusY, initRadiusZ); 
 
-          //  Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
+            // m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
+             m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX); 
+
+            m_writer.WriteLine(  i+ "th LED POS:" + m_BoidLEDArray[i].Position);
+            m_writer.WriteLine(i + "th LED frame:\n" + m_BoidLEDArray[i].BoidFrame);
+
         } // for  (int i )
 
         //Debug.Log("Second Chain:");
@@ -487,24 +530,28 @@ public class LEDColorGenController : MonoBehaviour
             // of the 2D circle boid.
 
 
-            Vector3 position = m_BoidLEDArray[m_firstChain + i].Position;
-            Vector3 YAxis = position.normalized; // the positive z axis which looks to the center
-                                                 //   The negative z is the normal vector of the 2D circle mesh.
+            Vector3 position = m_BoidLEDArray[i].Position;
+            Vector3 YAxis = position.normalized; // The direction vector of the boid
+                                                 // is considered as the local up vector of the boid frame.
 
-            Vector3 ZAxis = Vector3.Cross(YAxis, Vector3.up);
-            // X = perpendicular to the y axis and up, and is assumed to point to the right of the boid
+            Vector3 ZAxis = Vector3.Cross(YAxis, Vector3.up); // XAxis = perpendicular to the
+            // plane formed by the boid up and the global up.
+            // It is tangent to the surface of sphere, and used as the forward head direction
+            // of the boid. 
+            // 
 
-            Vector3 XAxis = Vector3.Cross(YAxis, ZAxis);
+            Vector3 XAxis = Vector3.Cross(YAxis, ZAxis);  // the side (rightward) direction of the
+                                                          // boid 
 
-            Matrix4x4 boidFrame = new Matrix4x4();
-            // XAxis, YAxis, ZAxis become the first, second, third columns of the boidFrame matrix
-            boidFrame.SetColumn(0, new Vector4(XAxis[0], XAxis[1], XAxis[2], 0.0f));
-            boidFrame.SetColumn(1, new Vector4(YAxis[0], YAxis[1], YAxis[2], 0.0f));
-            boidFrame.SetColumn(2, new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f));
-            boidFrame.SetColumn(3, new Vector4(position[0], position[1], position[2], 1.0f));
+            Vector4 col0 = new Vector4(XAxis[0], XAxis[1], XAxis[2], 0.0f);
+            Vector4 col1 = new Vector4(YAxis[0], YAxis[1], YAxis[2], 0.0f);
+            Vector4 col2 = new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f);
+            Vector4 col3 = new Vector4(position[0], position[1], position[2], 1.0f);
 
+            Matrix4x4 boidFrame = new Matrix4x4(col0, col1, col2, col3);
+
+           
             m_BoidLEDArray[m_firstChain + i].BoidFrame = boidFrame;
-
 
             m_BoidLEDArray[m_firstChain + i].HeadDir = ZAxis;
 
@@ -514,12 +561,17 @@ public class LEDColorGenController : MonoBehaviour
             float initRadiusZ = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
 
 
-            m_BoidLEDArray[m_firstChain + i].Scale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
+            m_BoidLEDArray[m_firstChain + i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX);
 
+            m_writer.WriteLine( (m_firstChain + i) + "th LED POS:" + m_BoidLEDArray[i].Position);
+            m_writer.WriteLine( (m_firstChain + i) + "th LED frame:" + m_BoidLEDArray[i].BoidFrame);
 
-           // Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
+            // Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
 
         } // for  (int i )
+
+        m_writer.Close();
+
 
         //Debug.Log("Fourth Chain:");
         //for (int i = 0; i < m_numOfChain4; i++)
@@ -594,17 +646,17 @@ public class LEDColorGenController : MonoBehaviour
 
         // Now set m_BoidLEDBuffer by dispatching BoidLEDCOmputeShader.
 
-        float currTime = Time.time; //  seconds
+       // float currTime = Time.time; //  seconds
 
        
-         m_boids.DetermineParamValue("_SamplingRadius", currTime, ref m_samplingRadius);
-
-        //m_boids.DetermineParamValue("_LEDChainHeight", currTime, ref m_LEDChainHeight);
-     
-        m_BoidLEDComputeShader.SetFloat("_HemisphereGroundPosition", m_HemisphereGroundPosition);
-        
-        
+         m_boids.DetermineParamValue("_SamplingRadius",  out m_samplingRadius);
         m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
+
+        m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
+     
+        m_BoidLEDComputeShader.SetInt("_Hemisphere", (int) Mathf.Round( m_Hemisphere) );
+        
+       
 
         m_BoidLEDComputeShader.Dispatch(m_kernelIDLED, m_threadGroupSize, 1, 1);
 
@@ -741,7 +793,13 @@ public class LEDColorGenController : MonoBehaviour
         if ( m_LEDSenderHandler is null)
         {
             Debug.LogError(" Event Handler Methods should be added to m_LEDSenderHandler in CommHub.cs");
-            Application.Quit();
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+#endif
+           
         }
         m_LEDSenderHandler.Invoke( m_LEDArray) ;
 

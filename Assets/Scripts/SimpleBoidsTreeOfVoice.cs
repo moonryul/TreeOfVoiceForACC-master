@@ -26,25 +26,27 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     float m_currTime;
 
     public float m_AnimationCycle = 390.0f; // 390 sec <=> Screen.width; 390sec/(Screen.Width *2)??
-    
+
+    public float m_SimulationDeltaT;
+
     public bool UseActionPlan = true;
    
 
     // 보이드의 수
-    [Range(1000, 10000)]
-    public float m_BoidsNum = 5000f;
+    [Range(500, 10000)]
+    public float m_BoidsNum = 1000f;
 
 
     
     [Range(0.0f, 3.0f)]
-    [SerializeField] public float MinBoidRadius = 0.5f;
+    [SerializeField] public float MinBoidRadius = 0.1f;
     [Range(0.0f, 3.0f)]
-    [SerializeField] public float MaxBoidRadius = 1.0f;
+    [SerializeField] public float MaxBoidRadius = 0.5f;
 
 
     [Range(0.0f, 3.0f)]
     [SerializeField] private float _minSpeed = 0.5f;
-    [Range(0.0f, 5.0f)]
+    [Range(1.0f, 5.0f)]
     [SerializeField] private float _maxSpeed= 3.0f;
 
 
@@ -59,12 +61,12 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
     // the neighborhood conditions and weights for the three flocking actions
     // 분리   
-
-    [SerializeField] private BoidSetting _separate = new BoidSetting(0.6f, 0.5f);
-    // 정렬
-    [SerializeField] private BoidSetting _alignment = new BoidSetting(2f, 0.3f);
-    // 응집
-    [SerializeField] private BoidSetting _cohesion = new BoidSetting(2f, 0.2f);
+    // boid radius is about 1.0m => The separation distance is about  two times as the radius
+    [SerializeField] private BoidSetting _separate = new BoidSetting(2.0f, 0.5f);
+    // 정렬: in the same direction
+    [SerializeField] private BoidSetting _alignment = new BoidSetting(4f, 0.3f);
+    // 응집: form a group: the range is greater than alignment
+    [SerializeField] private BoidSetting _cohesion = new BoidSetting(6f, 0.2f);
 
 
 
@@ -85,23 +87,23 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
 
 
-    [Range(-1.0f, 1.0f)]
-    [SerializeField] private float _groundMinHue = 0.0f;
+    [Range(-180.0f, 0.0f)]
+    [SerializeField] private float _groundMinHue = -180.0f;
 
-    [Range(-1.0f, 1.0f)]
-    [SerializeField] private float _groundMaxHue = 1.0f;
-
-    [Range(0.0f, 1.0f)]
-    [SerializeField] private float _groundMinSaturation = 0.2f;
+    [Range(-180f, 0.0f)]
+    [SerializeField] private float _groundMaxHue = 0.0f;
 
     [Range(0.0f, 1.0f)]
-    [SerializeField] private float _groundMaxSaturation = 1.0f;
+    [SerializeField] private float _groundMinSaturation = 0.0f;
 
     [Range(0.0f, 1.0f)]
-    [SerializeField] private float _groundMinValue = 0.5f;
+    [SerializeField] private float _groundMaxSaturation = 0.5f;
 
     [Range(0.0f, 1.0f)]
-    [SerializeField] private float _groundMaxValue = 1.0f;
+    [SerializeField] private float _groundMinValue = 0.0f;
+
+    [Range(0.0f, 1.0f)]
+    [SerializeField] private float _groundMaxValue = 0.5f;
 
     [Range(0.0f, 1.0f)]
     [SerializeField] private float _groundMinAlpha = 0.2f;
@@ -111,25 +113,25 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
 
 
-    [Range(-1.0f, 1.0f)]
+    [Range(0f, 180f)]
     [SerializeField] private float _ceilingMinHue = 0.0f;
 
-    [Range(-1.0f, 1.0f)]
-    [SerializeField] private float _ceilingMaxHue = 1.0f;
+    [Range(0f, 180f)]
+    [SerializeField] private float _ceilingMaxHue = 180f;
 
 
     [Range(0.0f, 1.0f)]
-    [SerializeField] private float _ceilingMinSaturation = 0.2f;
+    [SerializeField] private float _ceilingMinSaturation = 0.5f;
 
     [Range(0.0f, 1.0f)]
     [SerializeField] private float _ceilingMaxSaturation = 1.0f;
 
 
     [Range(0.0f, 1.0f)]
-    [SerializeField] private float _ceilingMinValue = 0.0f;
+    [SerializeField] private float _ceilingMinValue = 0.5f;
 
     [Range(0.0f, 1.0f)]
-    [SerializeField] private float _ceilingMaxValue = 0.5f;
+    [SerializeField] private float _ceilingMaxValue = 1.0f;
 
     [Range(0.0f, 1.0f)]
     [SerializeField] private float _ceilingMinAlpha = 0.2f;
@@ -164,9 +166,9 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     
     public int numOfWalls = 2; // ground, ceiling, front wall
 
-    public int numOfWallGizmos = 3; // ground, ceiling, front wall
+    public int m_numOfWallGizmos = 3; // ground, ceiling, front wall
+    static private bool m_wallTransformsDefined = false;
 
-  
     public float m_MinDomainRadius = 0.7f; // the minumum radius of of the xz domain; used LED boid rendering
     public float m_MaxDomainRadius = 10; // // the maximum radius of of the xz domain; used in LED boid rendering
 
@@ -189,6 +191,8 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     int totalNumOfSimulations = 0;
     bool m_IsGizmoDrawn = false;
     StreamWriter m_writer;
+    FileStream m_oStream;
+
 
     //When you create a struct object using the new operator, it gets created and the appropriate constructor is called.
     //Unlike classes, structs can be instantiated without using the new operator. 
@@ -213,7 +217,7 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     // Sample[] samples = new Sample[100];
     // for (int i = 0; i<samples.Length; i++) samples[i] = new Sample();
 
-    private bool wallTransformsDefined = false;
+  
 
     private bool IsBoidsNumSet = false;
 
@@ -260,17 +264,69 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     }
 
 
+   ;
 
-    private void Awake()
+//class Test
+//{
+//    public static void Main()
+//    {
+//        string path = @"c:\temp\MyTest.txt";
+//        if (!File.Exists(path))
+//        {
+//            // Create a file to write to.
+//            using (StreamWriter sw = File.CreateText(path))
+//            {
+//                sw.WriteLine("Hello");
+//                sw.WriteLine("And");
+//                sw.WriteLine("Welcome");
+//            }
+//        }
+
+//        // Open the file to read from.
+//        using (StreamReader sr = File.OpenText(path))
+//        {
+//            string s = "";
+//            while ((s = sr.ReadLine()) != null)
+//            {
+//                Console.WriteLine(s);
+//            }
+//        }
+//    }
+//}
+
+private void Awake()
     {
 
         // DEBUG code
-        string fileName = "SimpleBoids1.txt";
+        string fileName = "SimpleBoidSimul";
+        string fileIndex = System.DateTime.Now.ToString("yyyyMMddHHmmss");
+        fileIndex.Replace(" ", string.Empty);
+        //fileIndex = string.Join("", 
+        //       fileIndex.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
+        // String[] Split(String[] separator, StringSplitOptions options);
+        //Because string is a reference type and the default value for all reference types is null. 
 
-        string path = "Assets/Resources/DebugFiles/" + fileName;
+        //https://answers.unity.com/questions/990496/ioexception-sharing-violation-on-path-please-help.html?_ga=2.11865712.591554826.1574537830-1174358732.1569135042
+       
+        //File.CreateText(pathToLoad)).Dispose();
+        //using (TextWriter writer = new StreamWriter(pathToLoad, false))
+        //{
+        //    writer.WriteLine("00:00:00,00/00/0000,1,1,500,20000,1500,50,20,10,5,2,1,1,0,10,50,50");
+        //    writer.Close();
+        //}
 
-        //Write some text to the test.txt file
-        m_writer = new StreamWriter(path, true); // do append
+        string path = "Assets/Resources/DebugFiles/" + fileName +  fileIndex + ".txt";
+
+        File.CreateText(path).Dispose();
+
+        ////Write some text to the test.txt file
+        m_writer = new StreamWriter(path, false); // do not append
+        //m_oStream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.None);
+        ////m_ioStream = new FileStream(path,
+        ////                               FileMode.OpenOrCreate,
+        ////                               FileAccess.ReadWrite,
+        ////                               FileShare.None);
+        //m_writer = new System.IO.StreamWriter(m_oStream);
 
         //// 벽의 크기
         //GroundMinCorner = new Vector3(-10f, -10f, -10f);
@@ -320,6 +376,7 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
         m_actionPlan = m_actionPlanController.m_actionPlan;
 
         m_SceneStartTime = Time.time; // set the current time in millisecond
+        m_currTime = m_SceneStartTime;
 
         Debug.Log("Start Time=" + m_SceneStartTime);
 
@@ -344,7 +401,7 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
         // Time.time (and Time.deltaTime) only change their value once per frame.
 
 
-        Simulate(m_currTime);
+        //Simulate(); // for debugging
     }
 
 
@@ -358,12 +415,12 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
         Vector3 wallOrigin, initEulerAngles;
         //const int maxNumOfWalls = 5;
 
-        if (!wallTransformsDefined)  // if true, skip the creation of walls
+        if (!m_wallTransformsDefined)  // if true, skip the creation of walls
         {
-            wallTransformsDefined = true;
+            m_wallTransformsDefined = true;
 
 
-            gameObjForWallTransforms = new GameObject[numOfWallGizmos];
+            gameObjForWallTransforms = new GameObject[m_numOfWallGizmos];
 
             GameObject gameObj = GameObject.Find("GroundWall");
             if (gameObj == null)
@@ -447,7 +504,7 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
             // For debugging           
 
-            for (int i = 0; i < numOfWallGizmos; i++)
+            for (int i = 0; i < m_numOfWallGizmos; i++)
             {
                 Debug.Log("Wall Orientation = "); Debug.Log(i);
 
@@ -465,25 +522,27 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
         // Walls are already created.
         //Draw the coordinate systems of each wall at the wallOrigin each frame.
-
-        for (int i = 0; i < numOfWallGizmos; i++)
+        if (m_wallTransformsDefined)
         {
+            for (int i = 0; i < m_numOfWallGizmos; i++)
+            {
 
-            // Debug.Log("Wall Gizmos  are drawn: " + i); ;
+                // Debug.Log("Wall Gizmos  are drawn: " + i); ;
 
-            Gizmos.color = Color.red;
+                Gizmos.color = Color.red;
 
-            Gizmos.DrawRay(gameObjForWallTransforms[i].transform.position, gameObjForWallTransforms[i].transform.right);
+                Gizmos.DrawRay(gameObjForWallTransforms[i].transform.position, gameObjForWallTransforms[i].transform.right);
 
-            Gizmos.color = Color.green;
+                Gizmos.color = Color.green;
 
-            Gizmos.DrawRay(gameObjForWallTransforms[i].transform.position, gameObjForWallTransforms[i].transform.up);
+                Gizmos.DrawRay(gameObjForWallTransforms[i].transform.position, gameObjForWallTransforms[i].transform.up);
 
-            Gizmos.color = Color.blue;
+                Gizmos.color = Color.blue;
 
-            Gizmos.DrawRay(gameObjForWallTransforms[i].transform.position, gameObjForWallTransforms[i].transform.forward);
+                Gizmos.DrawRay(gameObjForWallTransforms[i].transform.position, gameObjForWallTransforms[i].transform.forward);
 
-        }
+            }
+        } // if (m_wallTransformsDefined)
 
     } //  private void OnDrawGizmos()
 
@@ -694,22 +753,31 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
 
             Vector3 position = m_boidArray[i].Position;
-            Vector3 YAxis = position.normalized; // the positive z axis which looks to the center
-               //   The negative z is the normal vector of the 2D circle mesh.
+            Vector3 YAxis = position.normalized; // The direction vector of the boid
+            // is considered as the local up vector of the boid frame.
+            
+            Vector3 ZAxis  = Vector3.Cross(YAxis, Vector3.up ); // XAxis = perpendicular to the
+            // plane formed by the boid up and the global up.
+            // It is tangent to the surface of sphere, and used as the forward head direction
+            // of the boid. 
+            // 
 
-            Vector3 ZAxis  = Vector3.Cross(YAxis, Vector3.up );  // left hand rule
-            // X = perpendicular to the y axis and up, and is assumed to point to the right of the boid
+            Vector3 XAxis  = Vector3.Cross(YAxis, ZAxis);  // the side (rightward) direction of the
+                                                           // boid 
 
-            Vector3 XAxis  = Vector3.Cross(YAxis, ZAxis);  // left hand rule           
+            Vector4 col0 = new  Vector4( XAxis[0], XAxis[1], XAxis[2], 0.0f);
+            Vector4 col1 = new Vector4( YAxis[0], YAxis[1], YAxis[2], 0.0f);
+            Vector4 col2 = new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f);
+            Vector4 col3 = new  Vector4( position[0], position[1], position[2], 1.0f);
 
-            Matrix4x4 boidFrame = new Matrix4x4();
+            Matrix4x4 boidFrame = new Matrix4x4(col0, col1, col2, col3);
                 // XAxis, YAxis, ZAxis become the first, second, third columns of the boidFrame matrix
-            boidFrame.SetColumn(0, new  Vector4( XAxis[0], XAxis[1], XAxis[2], 0.0f) );
-            boidFrame.SetColumn(1, new Vector4( YAxis[0], YAxis[1], YAxis[2], 0.0f));
-            boidFrame.SetColumn(2, new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f));
-            boidFrame.SetColumn(3, new Vector4( position[0], position[1], position[2], 1.0f));
+            //boidFrame.SetColumn(0, new  Vector4( XAxis[0], XAxis[1], XAxis[2], 0.0f) );
+            //boidFrame.SetColumn(1, new Vector4( YAxis[0], YAxis[1], YAxis[2], 0.0f));
+            //boidFrame.SetColumn(2, new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f));
+            //boidFrame.SetColumn(3, new Vector4( position[0], position[1], position[2], 1.0f));
 
-            m_boidArray[i].BoidFrame = boidFrame; // affine frame
+            m_boidArray[i].BoidFrame = boidFrame; // affine frame; Matrix4x4 is a value type
 
             //thetaDir = Random.Range(0, M_PI);
             //phiDir = Random.Range(0, 2 * M_PI); // azimuth for the head direction
@@ -725,9 +793,9 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
              initRadiusY = Random.Range(MinBoidRadius, MaxBoidRadius);
              initRadiusZ = Random.Range(MinBoidRadius, MaxBoidRadius);
 
-             initScale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
-
-             initSpeed = Random.Range(_minSpeed, _maxSpeed);
+            //initScale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
+            initScale = new Vector3(initRadiusX, initRadiusX, initRadiusX);
+            initSpeed = Random.Range(_minSpeed, _maxSpeed);
        
              m_boidArray[i].Scale = initScale;
 
@@ -740,76 +808,150 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     } // SetBoidArray()
 
 
-    public void DetermineParamValue(string name, float currTime, ref float paramValue)
+    public void DetermineParamValue(string name,  out float paramValue)
     {
         // check if deltaTime is more than SceneDuration of  the action plan => reset SceneStartTime to
         // the current time.
 
-        // ref float paramValue has a value before the function was alled
-      
+        if (m_SimulationDeltaT >= m_AnimationCycle)
+        {
+            m_SceneStartTime = m_currTime;
+           // m_SimulationDeltaT = 0f; // wrap to the beginning of actionPlan to repeat the scene
 
-        float deltaT = currTime - m_SceneStartTime; //  the delta time since the beginning of the
+        }
+        // ref float paramValue has a value before the function was alled
+
+
+        m_SimulationDeltaT = m_currTime - m_SceneStartTime; //  the delta time since the beginning of the
                                                     // current animation cycle
         //Debug.Log("DeltaT=");
         //Debug.Log(deltaT);
 
         List<ActionPlanController.Action> timedActions = m_actionPlan[name];
 
-        if ( deltaT >= m_AnimationCycle)
-        {
-            m_SceneStartTime = currTime;
-            deltaT = 0f; // wrap to the beginning of actionPlan to repeat the scene
 
-        }
+        ActionPlanController.TimeInterval timedActionBinaryTree
+                = m_actionPlanController.m_actionPlanWithBinaryTree[name];
 
         // find the interval in the timedActions to which deltaTime belongs
-        for (int j = 0; j < timedActions.Count; j++) // actionPlan is a piecewise linear function of each parameter
-        {
-                
-            // deltaT satisfies one of the following conditions always
-            if ( deltaT < (timedActions[0].T[1] + timedActions[0].T[1]) / 2)
+        // for (int j = 0; j < timedActions.Count; j++) // actionPlan is a piecewise linear function of each parameter
+        // {
+
+        // m_SimulationDeltaT satisfies one of the following conditions always
+        // The first "action" for the current parameter, timedActions[0], has 
+        // the first interval ( T[0], T[1]). If the delta is less than the midpoint of the interval
+        // the midpoint value of the interval, timedActions[0].V, is used.
+        if (m_SimulationDeltaT < (timedActions[0].T[0] + timedActions[0].T[1]) / 2)
             {
                 paramValue = timedActions[0].V;
                 return;
-            }
+            } // first interval
 
-            else if ( deltaT >= (timedActions[timedActions.Count - 1].T[0] + timedActions[timedActions.Count - 1].T[1]) / 2)
+            // The last "action" for the current parameter, timedActions[0], has 
+            // the interval ( T[0], T[1]). If the delta is greater than the midpoint of the 
+            // last interval, the midpoint value of the interval, 
+            //  timedActions[timedActions.Count - 1].V, is used.
+
+            else if (m_SimulationDeltaT >= (timedActions[timedActions.Count - 1].T[0] + timedActions[timedActions.Count - 1].T[1]) / 2)
             { // the ith action is found for the current parameter
                 paramValue = timedActions[timedActions.Count - 1].V;
                 return;
-            }
+            } // last interval
 
+            // Otherwise, the value of the current parameter is interpolated between the midpoint
+            // value of the previous interval and the midpoint value of the current interval
             else
-            {
-                for ( int k =1; k< timedActions.Count-1; k++ )
+            { // m_SimulationDeltaT is between timedActions[k - 1].T[1] and timedActions[k].T[0]
+                // for some k.
+
+                // int k = findCurrentActionIndex(timedActions, m_SimulationDeltaT);
+                int k = m_actionPlanController.searchForActionIndex(timedActionBinaryTree, m_SimulationDeltaT);
+
+            //int actionIndex
+            //              = m_actionPlanController.searchForActionIndex(timedActionBinaryTree, m_SimulationDeltaT);
+
+            //if ( actionIndex == -1 )
+            //    {
+            //    Debug.LogError(" No action index has been found for the current time");
+
+            //    #if UNITY_EDITOR
+            //    // Application.Quit() does not work in the editor so
+            //    UnityEditor.EditorApplication.isPlaying = false;
+            //    #else
+            //       Application.Quit();
+            //   #endif
+
+            //   }
+            //if ( k != actionIndex)
+            //     {
+            //      Debug.LogError(" Binary Search does not work");
+            //    m_writer.WriteLine("Binary Search does not work");
+            //     #if UNITY_EDITOR
+            //       // Application.Quit() does not work in the editor so
+            //       UnityEditor.EditorApplication.isPlaying = false;
+            //        #else
+            //       Application.Quit();
+            //       #endif
+
+            //     }
+
+                if (k == -1)
                 {
-                    if (deltaT >= (timedActions[k - 1].T[0] + timedActions[k - 1].T[1]) / 2
-                         && deltaT < (timedActions[k].T[0] + timedActions[k].T[1]) / 2)
-                    {
-                        float t = (deltaT - (timedActions[k - 1].T[0] + timedActions[k - 1].T[1]) / 2)
-                                   /
+                 Debug.LogError(" Some time intervals of the action plan table are specified incorrectly. " +
+                       "please corrent them first");
 
-                                   (  (timedActions[k].T[0] + timedActions[k].T[1]) / 2
-                                      -
-                                      (timedActions[k - 1].T[0] + timedActions[k - 1].T[1]) / 2
-                                    );
-                                       
-                        paramValue = timedActions[k-1].V * (1-t) * timedActions[k].V * t;
-                        return;
-                    }
+                m_writer.WriteLine(" Some time intervals of the action plan table are specified incorrectly. " +
+                       "please corrent them first");
+                paramValue = -1; // undefined out paramValue
+
+                #if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                   UnityEditor.EditorApplication.isPlaying = false;
+                #else
+                   Application.Quit();
+                #endif
+
                 }
+                else
+                {
+                    float firstTimePoint = (timedActions[k - 1].T[0] + timedActions[k - 1].T[1]) / 2;
+                    float secondTimePoint = (timedActions[k].T[0] + timedActions[k].T[1]) / 2;
+                    float t = (m_SimulationDeltaT - firstTimePoint) /
+                                       (secondTimePoint - firstTimePoint);
 
-            }
-              
+                    paramValue = timedActions[k - 1].V * (1 - t) + timedActions[k].V * t;
+                    return;
+                }
+            } // else (intermediate intervals)
 
-        } // for all actions of the current parameter
+                   
+} // DetermineParaValue()
 
-    } // DetermineParaValue()
+public int findCurrentActionIndex(List<ActionPlanController.Action> timedActions, float simulationDeltaT)
+{
 
 
+    for (int k = 1; k <= timedActions.Count - 1; k++)
+    {
+            float firstTimePoint = (timedActions[k - 1].T[0] + timedActions[k - 1].T[1]) / 2;
+            float secondTimePoint = (timedActions[k].T[0] + timedActions[k].T[1]) / 2;
 
+            if (simulationDeltaT >=  firstTimePoint  && 
+                         simulationDeltaT < secondTimePoint )
+            {
+               return k;
+             }
+             else continue;
+    } // for
 
-    protected void Simulate(float currTime) // called from Update()
+    //Debug.LogError(" Some time intervals of the action plan table are specified incorrectly. " +
+    //   "please corrent them first");
+
+    return -1;
+
+}//findCurrentInterval()
+
+protected void Simulate() // called from Update()
     {
 
 
@@ -819,49 +961,49 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
 
         if (UseActionPlan)
         {
-            DetermineParamValue("_SpeedFactor", currTime, ref _speedFactor);
-            DetermineParamValue("_ScaleFactor", currTime, ref _scaleFactor);
+            DetermineParamValue("_SpeedFactor", out _speedFactor);
+            DetermineParamValue("_ScaleFactor",  out _scaleFactor);
 
 
-            DetermineParamValue("_SeparateRadius", currTime, ref _separate.Radius);
-            DetermineParamValue("_SeparateWeight", currTime, ref _separate.Weight);
+            DetermineParamValue("_SeparateRadius",out _separate.Radius);
+            DetermineParamValue("_SeparateWeight", out _separate.Weight);
 
-            DetermineParamValue("_AlignmentRadius", currTime, ref _alignment.Radius);
-            DetermineParamValue("_AlignmentWeight", currTime, ref _alignment.Weight);
+            DetermineParamValue("_AlignmentRadius",  out _alignment.Radius);
+            DetermineParamValue("_AlignmentWeight",  out _alignment.Weight);
 
-            DetermineParamValue("_CohesionRadius", currTime, ref _cohesion.Radius);
-            DetermineParamValue("_CohesionWeight", currTime, ref _cohesion.Weight);
+            DetermineParamValue("_CohesionRadius",  out _cohesion.Radius);
+            DetermineParamValue("_CohesionWeight", out _cohesion.Weight);
 
-            DetermineParamValue("_GroundFlockingWeight", currTime, ref _groundWeight.FlockingWeight);
-            DetermineParamValue("_GroundDivergeWeight", currTime, ref _groundWeight.DivergeWeight);
-            DetermineParamValue("_GroundCirculationWeight", currTime, ref _groundWeight.CirculationWeight);
+            DetermineParamValue("_GroundFlockingWeight",  out _groundWeight.FlockingWeight);
+            DetermineParamValue("_GroundDivergeWeight", out _groundWeight.DivergeWeight);
+            DetermineParamValue("_GroundCirculationWeight",  out _groundWeight.CirculationWeight);
 
-            DetermineParamValue("_CeilingFlockingWeight", currTime, ref _ceilingWeight.FlockingWeight);
-            DetermineParamValue("_CeilingConvergeWeight", currTime, ref _ceilingWeight.ConvergeWeight);
-            DetermineParamValue("_CeilingCirculationWeight", currTime, ref _ceilingWeight.CirculationWeight);
-
-
-            DetermineParamValue("_GroundMinHue", currTime, ref _groundMinHue);
-            DetermineParamValue("_GroundMaxHue", currTime, ref _groundMaxHue);
-            DetermineParamValue("_GroundMinSaturation", currTime, ref _groundMinSaturation);
-            DetermineParamValue("_GroundMaxSaturation", currTime, ref _groundMaxSaturation);
-            DetermineParamValue("_GroundMinValue", currTime, ref _groundMinValue);
-            DetermineParamValue("_GroundMaxValue", currTime, ref _groundMaxValue);
-
-            DetermineParamValue("_GroundMinAlpha", currTime, ref _groundMinAlpha);
-            DetermineParamValue("_GroundMaxAlpha", currTime, ref _groundMaxAlpha);
+            DetermineParamValue("_CeilingFlockingWeight",  out _ceilingWeight.FlockingWeight);
+            DetermineParamValue("_CeilingConvergeWeight",  out _ceilingWeight.ConvergeWeight);
+            DetermineParamValue("_CeilingCirculationWeight", out _ceilingWeight.CirculationWeight);
 
 
+            DetermineParamValue("_GroundMinHue",  out _groundMinHue);
+            DetermineParamValue("_GroundMaxHue",  out _groundMaxHue);
+            DetermineParamValue("_GroundMinSaturation",  out _groundMinSaturation);
+            DetermineParamValue("_GroundMaxSaturation", out _groundMaxSaturation);
+            DetermineParamValue("_GroundMinValue",  out _groundMinValue);
+            DetermineParamValue("_GroundMaxValue",  out _groundMaxValue);
 
-            DetermineParamValue("_CeilingMinHue", currTime, ref _ceilingMinHue);
-            DetermineParamValue("_CeilingMaxHue", currTime, ref _ceilingMaxHue);
-            DetermineParamValue("_CeilingMinSaturation", currTime, ref _ceilingMinSaturation);
-            DetermineParamValue("_CeilingMaxSaturation", currTime, ref _ceilingMaxSaturation);
-            DetermineParamValue("_CeilingMinValue", currTime, ref _ceilingMinValue);
-            DetermineParamValue("_CeilingMaxValue", currTime, ref _ceilingMaxValue);
+            DetermineParamValue("_GroundMinAlpha", out _groundMinAlpha);
+            DetermineParamValue("_GroundMaxAlpha",out _groundMaxAlpha);
 
-            DetermineParamValue("_CeilingMinAlpha", currTime, ref _ceilingMinAlpha);
-            DetermineParamValue("_CeilingMaxAlpha", currTime, ref _ceilingMaxAlpha);
+
+
+            DetermineParamValue("_CeilingMinHue", out _ceilingMinHue);
+            DetermineParamValue("_CeilingMaxHue", out _ceilingMaxHue);
+            DetermineParamValue("_CeilingMinSaturation",  out _ceilingMinSaturation);
+            DetermineParamValue("_CeilingMaxSaturation", out _ceilingMaxSaturation);
+            DetermineParamValue("_CeilingMinValue",  out _ceilingMinValue);
+            DetermineParamValue("_CeilingMaxValue",  out _ceilingMaxValue);
+
+            DetermineParamValue("_CeilingMinAlpha",  out _ceilingMinAlpha);
+            DetermineParamValue("_CeilingMaxAlpha",  out _ceilingMaxAlpha);
 
 
             // apply the current values of the parameters to the compute shader
@@ -943,56 +1085,77 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
         //Debug.Log("Iteration Num of Simuation:");
         //Debug.Log(totalNumOfSimulations);
 
+        //Debug.Log("m_SimulationDeltaT of action plan:");
+        //Debug.Log(m_SimulationDeltaT);
+
+     
         //m_writer.WriteLine("Iteration Num of Simuation:" + totalNumOfSimulations);
+        //m_writer.WriteLine("m_SimulationDeltaT of action plan:" + m_SimulationDeltaT);
+        // StreamWriter(string path, bool append);
+        // writer.WriteLine("Test");
+        //// m_boids.m_BoidBuffer
+       // m_BoidBuffer.GetData(m_boidArray); // used in LEDColorGenController
 
-        //// StreamWriter(string path, bool append);
-        //// writer.WriteLine("Test");
-        ////// m_boids.m_BoidBuffer
-        //m_BoidBuffer.GetData(m_boidArray); // used in LEDColorGenController
+       // for (int i = 0; i < (int)m_BoidsNum / 100; i++)
+       // {
 
-        //for (int i = 0; i < (int)m_BoidsNum/100; i++)
-        //{
+       //     //Debug.Log("boidNo = "); Debug.Log(i);
+       //     m_writer.WriteLine("boidNo = " + i);
+       //     //Debug.Log("boid Wall No = ");
+       //     m_writer.WriteLine("boid Wall No = " + m_boidArray[i].WallNo);
 
-        //    //Debug.Log("boidNo = "); Debug.Log(i);
-        //    m_writer.WriteLine("boidNo = " + i);
-        //    //Debug.Log("boid Wall No = ");
-        //    m_writer.WriteLine("boid Wall No = " + m_boidArray[i].WallNo);
+       //     // Debug.Log(m_boidArray[i].WallNo);
+       //     //Debug.Log("position = = ");
+       //     //Debug.Log(m_boidArray[i].Position);
 
-        //   // Debug.Log(m_boidArray[i].WallNo);
-        //    //Debug.Log("position = = ");
-        //    //Debug.Log(m_boidArray[i].Position);
+       //     m_writer.WriteLine("position = = " + m_boidArray[i].Position);
 
-        //    m_writer.WriteLine("position = = " + m_boidArray[i].Position);
+       //     //Debug.Log("Boid Radius= ");
+       //     //Debug.Log(m_boidArray[i].Position.magnitude);
 
-        //    //Debug.Log("Boid Radius= ");
-        //    //Debug.Log(m_boidArray[i].Position.magnitude);
+       //     m_writer.WriteLine("Boid Radius= " + m_boidArray[i].Position.magnitude);
 
-        //    m_writer.WriteLine("Boid Radius= " + m_boidArray[i].Position.magnitude);
+       //     //Debug.Log("Boid color (HSV) = = ");
+       //     //Debug.Log(m_boidArray[i].ColorHSV); // h,s,l ranges from 0 to 1
+       //     m_writer.WriteLine("Boid HSV: (atan2, angDeg, hDeg) = " + m_boidArray[i].ColorHSV);
 
-        //    //Debug.Log("Boid color (HSV) = = ");
-        //    //Debug.Log(m_boidArray[i].ColorHSV); // h,s,l ranges from 0 to 1
-        //    m_writer.WriteLine("Boid HSV = " + m_boidArray[i].ColorHSV);
+       //     //Debug.Log("Boid color (RGB computed in shader) = = ");
+       //     //Debug.Log(m_boidArray[i].Color);
 
-        //    //Debug.Log("Boid color (RGB computed in shader) = = ");
-        //    //Debug.Log(m_boidArray[i].Color);
+       //     if (m_boidArray[i].WallNo == 0)
+       //     {
+       //         m_writer.WriteLine("Boid (_groundMinHue,_groundMaxHue,_groundMinValue," +
+       //             "_groundMaxValue) in Script= " + _groundMinHue + " " +
+       //             _groundMaxHue + " " + _groundMinValue + " " + _groundMaxValue);
 
-        //    m_writer.WriteLine("Boid RGB converted from HSL in  shader= " + m_boidArray[i].Color);
+       //      }
+       //     else
+       //     {
+       //         m_writer.WriteLine("Boid (_ceilingMinHue,_ceilingMaxHue,_ceilingMinValue," +
+       //            "_ceilingMaxValue) in Script= " + _ceilingMinHue + " " +
+       //            _ceilingMaxHue + " " + _ceilingMinValue + " " + _ceilingMaxValue);
+
+       //     }
+
+       //// }
+
+       //    m_writer.WriteLine("Boid (_minHue,_maxHue,_minValue,_maxValue) in shader= " + m_boidArray[i].Color);
 
 
-        //    Color color = Color.HSVToRGB(m_boidArray[i].ColorHSV.x / 360,
-        //                      m_boidArray[i].ColorHSV.y, m_boidArray[i].ColorHSV.z);
+           // Color color = Color.HSVToRGB(m_boidArray[i].ColorHSV.x / 360,
+           //                   m_boidArray[i].ColorHSV.y, m_boidArray[i].ColorHSV.z);
 
 
-        //    //Debug.Log("color (RGB by Unity API) = = ");
-        //    //Debug.Log(color);
+            ////Debug.Log("color (RGB by Unity API) = = ");
+            ////Debug.Log(color);
 
-        //    m_writer.WriteLine("Boid RGB from HSV by Unity API = = " + color);
-
-
-        //    //    //m_boidArray[i].Color = new Vector4(color.r, color.g, color.b, m_boidArray[i].Color.w);
+           // m_writer.WriteLine("Boid RGB from HSV by Unity API = = " + color);
 
 
-        //    }//     for (int i = 0; i < (int)m_BoidsNum; i++)
+            //    //    //m_boidArray[i].Color = new Vector4(color.r, color.g, color.b, m_boidArray[i].Color.w);
+
+
+       // }//     for (int i = 0; i < (int)m_BoidsNum; i++)
 
             //BoidBuffer.SetData(m_boidArray); // buffer is R or RW
 

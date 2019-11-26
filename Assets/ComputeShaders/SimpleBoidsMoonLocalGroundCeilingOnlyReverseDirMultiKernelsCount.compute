@@ -566,7 +566,7 @@ void computeBoidColor(inout Boid pBoid)
 			float3 boidHorizontalVector = pBoid.position - boidVerticalComponent * float3(0, -1, 0);
 			
 			float boidHorizontalRadius = length(boidHorizontalVector);
-
+			float boidVerticalRadius = abs(boidVerticalComponent);
 
 			if (boidHorizontalRadius < _CeilingInnerRadius)
 			{
@@ -588,13 +588,22 @@ void computeBoidColor(inout Boid pBoid)
 
 		
 			l = _GroundMinValue + (_GroundMaxValue - _GroundMinValue) /
-				( _MaxDomainRadius - 0.0 ) * (boidVerticalComponent - 0.0);
+				( _MaxDomainRadius - 0.0 ) * (_MaxDomainRadius - boidVerticalRadius );
 
 			alpha = 1;					   		
 
-		
+		// debug
+			float s = 0.5;
+			float l = 0.5;
 			pBoid.color = float4(hslToRgb(hDeg / 360, s, l), alpha);
+
+			// debug
+			//pBoid.color = float4(0,0,0,1);
+			//pBoid.color = float4(_GroundMinHue, _GroundMaxHue, _GroundMinValue, _GroundMaxValue);
+
 			//pBoid.color = float4(hslToRgb2(hDeg, s, l), alpha);
+			//float3 hsv = float3( atan2(pBoid.position.z, pBoid.position.x), angDeg,hDeg );
+
 			float3 hsv = hslToHsv(hDeg, s, l);
 			pBoid.colorHSV = hsv;
 					
@@ -602,7 +611,7 @@ void computeBoidColor(inout Boid pBoid)
 		 
 		
 
-	}//if (pBoid.wallNo == 1) // ceiling
+	}//if (pBoid.wallNo == 0) // 
 
 	if (pBoid.wallNo == 1) // ceiling
 	{
@@ -659,7 +668,7 @@ void computeBoidColor(inout Boid pBoid)
 		float3 boidHorizontalVector = pBoid.position - boidVerticalComponent * float3(0, 1, 0);
 
 		float boidHorizontalRadius = length(boidHorizontalVector);
-
+		float boidVerticalRadius = abs(boidVerticalComponent);
 
 		if (boidHorizontalRadius < _CeilingInnerRadius)
 		{
@@ -681,7 +690,7 @@ void computeBoidColor(inout Boid pBoid)
 
 		// _GroundRadius is used as _HeightRadius because we have a sphere here
 		l = _CeilingMinValue + (_CeilingMaxValue - _CeilingMinValue) /
-			(_MaxDomainRadius - 0.0f) * (boidVerticalComponent - 0.0f);
+			(_MaxDomainRadius - 0.0f) * (boidVerticalRadius - 0.0f);
 
 
 
@@ -710,12 +719,24 @@ void computeBoidColor(inout Boid pBoid)
 
 		alpha = 1;
 			   
-
+		// debug
+		float s = 0.5;
+		float l = 0.5;
 		float3 hsv = hslToHsv(hDeg, s, l);
+
+		//float3 hsv = hslToHsv(angDeg, hDeg, atan2(pBoid.position.z, pBoid.position.x));
+		//float3 hsv = float3(atan2(pBoid.position.z, pBoid.position.x), angDeg, hDeg );
 		pBoid.colorHSV = hsv;
 		
 
 		pBoid.color = float4( hslToRgb(hDeg/360, s, l), alpha);
+
+
+		//pBoid.color = float4(_CeilingMinHue, _CeilingMaxHue, _CeilingMinValue, _CeilingMaxValue);
+
+		
+
+
 		//pBoid.color = float4( hslToRgb2(hDeg, s, l), alpha);
 
 		return;
@@ -764,9 +785,9 @@ void moveBoidsToLowerHemisphere(inout Boid pBoid)
 
 	pBoid.position = newPosition;
 
-	float4 newZAxis = ZAxis;
-	float4 newYAxis = -YAxis;
-	float4 newXAxis = -XAxis;
+	float4 newZAxis = ZAxis; // the head direction is the same
+	float4 newYAxis = -YAxis; // the up direction is the opposite
+	float4 newXAxis = -XAxis; // the rightward becomes the leftward
 
 	 firstRow = float4(newXAxis[0], newYAxis[0], newZAxis[0], pBoid.position[0]);
 	 secondRow = float4(newXAxis[1], newYAxis[1], newZAxis[1], pBoid.position[1]);
@@ -880,11 +901,11 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 				// project neibor nBoid onto the tangent plane of pBoid at its position on
 				// the sphere.
 
-				float3 pBoidUnitPositionVector = normalize(pBoid.position);
+				float3 pBoidUnitPosVector = normalize(pBoid.position);
 				float  pBoidLength= length(pBoid.position);
-				float  nBoidLengthAlongpBoidPositionDir = dot(nBoid.position, pBoidUnitPositionVector);
-				float delta = pBoidLength - nBoidLengthAlongpBoidPositionDir;
-				float3 projectednBoidPos = nBoid.position + delta * pBoidUnitPositionVector;
+				float  lengthOfnBoidProjectedTopBoidPosVector = dot(nBoid.position, pBoidUnitPosVector);
+				float delta = pBoidLength - lengthOfnBoidProjectedTopBoidPosVector;
+				float3 projectednBoidPos = nBoid.position + delta * pBoidUnitPosVector;
 
 				float3 tangentialDiffVec = pBoid.position - projectednBoidPos;
 				float tangentialDist = length(tangentialDiffVec );
@@ -1063,7 +1084,7 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 
 			float3 sourcePosGlobal = float3(0, -_MaxDomainRadius, 0);
 
-			goalSeekingDir = normalize( pBoid.position - sourcePosGlobal);
+			goalSeekingDir = normalize( pBoid.position - sourcePosGlobal); // away from the sourcw
 
 			// project goalSeekingDir on the boid Frame plane
 			// Project new pBoid.position on the sphere along the radius direction from the center of
@@ -1133,15 +1154,15 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 
 		float3 prevPos = pBoid.position;		
 
-		pBoid.position += pNewVel * pBoid.duration;
+		float3 newBoidPosition = pBoid.position +pNewVel * pBoid.duration;
 		
 	
 		// Project new pBoid.position on the tangent plane of the sphere at the new location.
 		// The new location should be on the surface of the sphere!
 
-		float3 normalDir = normalize(pBoid.position );
+		float3 newNormalDir = normalize(newBoidPosition);
 
-		float3 pBoidPosOnTangentPlane = _MaxDomainRadius * normalDir;
+		float3 pBoidPosOnTangentPlane = _MaxDomainRadius * newNormalDir;
 		
 		pBoid.position = pBoidPosOnTangentPlane;
 
@@ -1152,10 +1173,11 @@ void SimulateBoids(uint3 DTid : SV_DispatchThreadID)
 		// The direction of pBoid.position will be the new Y axis (the back direction of the boid)
 		// The cross product (left hand rule) of Y and Z will the X axis pointing to the right direction
 
-		float3 newZAxis = normalize( getTangentComponent(pBoid.headDir, normalDir) ) ;
-		float3 newYAxis = normalDir;
-		float3 newXAxis = -cross(newYAxis, newZAxis); // use the left hand rule to follow
-		                                              // Unity
+		float3 newZAxis = normalize( getTangentComponent(pBoid.headDir, newNormalDir) ) ;
+		float3 newYAxis = newNormalDir;
+		float3 newXAxis = -cross(newYAxis, newZAxis); // use the left hand rule to
+		// the compute rightward basis
+
 		//float3x3 n = float3x3(row0, row1, row2); // sets rows of matrix n
 		//cf https://docs.unity3d.com/ScriptReference/Material.SetMatrix.html?_ga=2.197958058.467342056.1573866422-1662555742.1530823204
 

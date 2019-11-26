@@ -44,7 +44,7 @@
 //"PassFlags" = OnlyDirectional: When used in ForwardBase pass type, this flag makes it so that only the main directional light
 //			and ambient / lightprobe data is passed into the shader.
 
-			//Blend SrcAlpha OneMinusSrcAlpha // no blending?
+			Blend SrcAlpha OneMinusSrcAlpha // 
 
             CGPROGRAM
 // Upgrade NOTE: excluded shader from OpenGL ES 2.0 because it uses non-square matrices
@@ -128,13 +128,25 @@
         #if SHADER_TARGET >= 45
             //RWStructuredBuffer<Boid> _BoidBuffer;	 // RW buffer does not work
 		    StructuredBuffer<Boid> _BoidBuffer;	
+
+			//RWStructuredBuffer<float4x4> _MatrixBuffer : register(u1);
+			//The register(u1)represents which internal gpu registrar 
+			//	to bind the data structure to.
+			//	You need to specify the same in C#, and keep in mind 
+			//	this is global on the GPU.
+
+			//int numOfShaderMatrices = 3; // 
+
+		//_MatrixBuffer[0] = UNITY_MATRIX_M;
+		//_MatrixBuffer[1] = UNITY_MATRIX_V;
+		//_MatrixBuffer[2] = UNITY_MATRIX_P;
         #endif
 
             struct v2f
             {
                 float4 pos : SV_POSITION; // the clip space position
 				float4 posWorld: TEXCOORD1; // world space pos of each vertex
-                float4 normal : NORMAL;
+                float3 normal : NORMAL;
                 float2 uv : TEXCOORD0;
     //            SHADOW_COORDS(2) // create a struct member
 				//UNITY_FOG_COORDS(1)
@@ -144,7 +156,52 @@
                 
             };
 
-			
+			float3x3 inverse3x3(float3x3 A)
+			{
+				float3 r0 = A[0]; // the first row
+				float3 r1 = A[1];
+				float3 r2 = A[2];
+
+				float3 c0 = A._m00_m10_m20;  // first column
+				float3 c1 = A._m01_m11_m21; // the second column
+				float3 c2 = A._m02_m12_m22; // the third;
+
+				float detA = dot(c0, -cross(c1, c2)); // the cross product is reversed
+				// to change from the right hand system of CG to the left hand system of 
+				// UNITY; All the vectors and matrices in this shader are assumed to 
+				// follow the Unity convention. 
+
+				float3x3 invA = (1 / detA)
+					* float3x3(-cross(c1, c2), // first row
+						-cross(c2, c0), // second row
+						-cross(c0, c1)); // third row
+
+				return invA;
+
+			}
+
+			//float3x3 inverse3x3(float3x3 A)
+			//{
+			//	float3 r0 = A[0]; // the first row
+			//	float3 r1 = A[1];
+			//	float3 r2 = A[2];
+
+			//	float3 c0 = float3(r0[0], r1[0], r2[0]); // first column
+			//	float3 c1 = float3(r0[1], r1[1], r2[1]);
+			//	float3 c2 = float3(r0[2], r1[2], r2[2]);
+
+			//	float detA = dot(c0, cross(c1, c2));
+
+			//	float3x3 invA = (1 / detA)
+			//		* float3x3(cross(c1, c2), // first row
+			//			cross(c2, c0), // second row
+			//			cross(c0, c1)); // third row
+
+			//	return invA;
+
+			//}
+
+
           
 			//The right-handed coordinate system use right hand rule to determine the direction of 
 			//the cross product, while the left-handed coordinate system use left hand rule,
@@ -154,8 +211,19 @@
 
 			// shaders with unity3D: http://xboxoneindiedevelopment.blogspot.kr/2015/02/coming-from-shaders-in-xna-to-shaders.html
 
+			// backface culling:
+			/*By default, backface culling is on, which means everything has one side
+			(the back face is culled).You don't want to use Cull Off,
+				except for those cases where you do want to render both sides.*/
+			//Biface: I totally agree with this post: if you need to have a biface mesh the best way is to duplicate it and flip normals.
+			//This is the right way for so many reasons..
+
             v2f vert (appdata_full v, uint instanceID : SV_InstanceID )
             {
+				// save shader matrices to the structured buffer
+				/*_MatrixBuffer[0] = UNITY_MATRIX_M;
+		        _MatrixBuffer[1] = UNITY_MATRIX_V;
+		        _MatrixBuffer[2] = UNITY_MATRIX_P;*/
 
 				////////////////////////////////
            // #if SHADER_TARGET >= 45
@@ -164,7 +232,7 @@
 
 				//float3 scale = b.scale;
 				float3 scale = _Scale * b.scale; // component wise multiplication
-
+				float scale0 = _Scale[0]* b.scale[0]; // component wise multiplication
 
 				float4x4 scaleMat = float4x4(
 					scale[0],    0,        0,           0,
@@ -174,7 +242,20 @@
 					);
 
 
-				float4x4 object2world = mul(b.boidFrame, scaleMat);
+				//float4x4 object2world = mul(b.boidFrame, scaleMat);
+				//float4x4 object2world = scale0 * b.boidFrame;
+
+				float3x3 R = (float3x3) b.boidFrame; // this is TR, without S (scale)
+
+				float3x3 RS = scale0 * R;
+				float4 T = b.boidFrame._m03_m13_m23_m33;
+
+				float4x4 object2world = float4x4(
+					float4(RS._m00_m01_m02, T[0]),
+					float4(RS._m10_m11_m12, T[1]),
+					float4(RS._m20_m21_m22, T[2]),
+					float4(0, 0, 0, T[3]));
+
 
 				// transform position to the clip space
                 v2f o;
@@ -185,7 +266,42 @@
 				o.posWorld = mul(object2world, v.vertex);
 				o.pos = mul( UNITY_MATRIX_VP, o.posWorld);
 
-                o.normal = normalize( mul( object2world, v.normal));
+				// change the way the normals are computed
+               
+				//o.normal = normalize( mul( object2world, v.normal));
+
+				// get the 3x3 part of 4x4 transform object2world
+				float3x3 L = float3x3( object2world[0].xyz,
+					                   object2world[1].xyz,
+					                   object2world[2].xyz );
+
+
+
+				//float3x3 R = (float3x3) b.boidFrame; // this is TR, without S (scale)
+				float3x3 Rinv = transpose(R);
+
+				// transform position to the clip space
+			   // v2f o;
+
+				// Note float4 pos : SV_POSITION; // the clip space position
+				// mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, float4(pos, 1.0)));
+				//o.pos = UnityObjectToClipPos( mul( object2world, v.vertex)  ); // v: the current vertex in the current mesh instance
+			   // o.posWorld = mul(object2world, v.vertex);
+				//o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
+
+				//NormalMatrix: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/
+				// get the 3x3 part of 4x4 transform object2world
+			   /* float3x3 L = float3x3(object2world[0].xyz,
+					object2world[1].xyz,
+					object2world[2].xyz);*/
+
+				//o.normal = normalize( mul( R, v.normal) ) ;
+				o.normal = normalize(mul(v.normal, (1 / scale0) * Rinv));
+
+
+
+				//o.normal = normalize(mul(v.normal, inverse3x3(L)));
+
 				// // just pass the texture coordinate
                 o.uv = v.texcoord;
 
@@ -214,10 +330,15 @@
 			//Usually the fragment shader does not override the Z buffer value, and a default value is used from the regular triangle rasterization.
 			//However, for some effects it is useful to output custom Z buffer depth values per pixel.
 
-		    fixed4 frag (v2f i) :  SV_Target
-            {
+			fixed4 frag(v2f i) : SV_Target
+			{
+				// use emissive color
+
+				//return float4(i.color.rgb, 1);
+
 				//int unity_InstanceID;
 				//UNITY_SETUP_INSTANCE_ID(i); //  necessary only if any instanced properties are going to be accessed in the fragment Shader
+
 
 				float3 normalDirection = i.normal;
 
@@ -227,11 +348,15 @@
 				float3 lightDirection;
 				float attenuation;
 
+				//Also if "LightMode"="ForwardBase" is true then the _WorldSpaceLightPos0 is always for a directional light, even if none exists in the scene.
+				//Only "LightMode"="ForwardAdd" has support for passing the position of point lights. 
 				if (0.0 == _WorldSpaceLightPos0.w) // directional light?
 				{
 					attenuation = 1.0; // no attenuation
-					lightDirection =
-						normalize(_WorldSpaceLightPos0.xyz);
+					lightDirection = -_WorldSpaceLightPos0.xyz; // light direction is the
+					// direction TO the light
+					//lightDirection =
+					//	normalize(_WorldSpaceLightPos0.xyz);
 				}
 				else // point or spot light
 				{
@@ -243,20 +368,48 @@
 					lightDirection = normalize(surfacePointToLightSource);
 				}
 
-				//float3 ambientLighting =
-				//	UNITY_LIGHTMODEL_AMBIENT.rgb * i.color.rgb;
-				float3 ambientLighting = float3(0, 0, 0);
+				float3 ambientLighting =
+					UNITY_LIGHTMODEL_AMBIENT.rgb * i.color.rgb;
+
+				ambientLighting = float3(0, 0, 0);
+				//return float4(ambientLighting, 1); // for debugging
+				
+
+
+				//// for debugging for the directinal light
+				float lightToNormal = dot(normalDirection, lightDirection);
+				if (lightToNormal < 0) {
+					//return float4(1, 0, 0, 1);
+					return float4(0, 0, 0, 1); // for debugging
+
+				}
+				else return //float4(0, 1, 0, 1); // for debugging
+					float4(0, 0, 0, 1);
 
 				float3 diffuseReflection =
 					attenuation * _LightColor0.rgb * i.color.rgb
 					            * max(0.0, dot(normalDirection, lightDirection));
 
+				//return float4(diffuseReflection, 1); // for debugging
+				//float3 diffuseReflection =
+				//	attenuation * _LightColor0.rgb * i.color.rgb
+				//		* abs ( dot(normalDirection, lightDirection) );
+
 				float3 specularReflection;
+
 				if (dot(normalDirection, lightDirection) < 0.0)
 					// light source on the wrong side?
 				{
-					specularReflection = float3(0.0, 0.0, 0.0);
-					//specularReflection = float3(0.0, 0.0, 1.0); // BLUE: Wrong side
+					
+					specularReflection = float3(0.0, 0.0, 0.0); // black: Wrong side
+
+					//specularReflection = attenuation * _LightColor0.rgb
+					//	* _SpecColor.rgb *
+					//	pow(max(0.0,
+					//		dot(reflect(-lightDirection, normalDirection),
+					//			viewDirection)),
+					//		_Shininess); // _Shininess =10
+
 
 					// no specular reflection
 				}
@@ -265,7 +418,7 @@
 					specularReflection = attenuation * _LightColor0.rgb
 						* _SpecColor.rgb * 
 						pow( max(0.0, 
-							     dot( reflect(-lightDirection, normalDirection),
+							     dot( reflect( -lightDirection, normalDirection),
 							          viewDirection) ),
 							_Shininess); // _Shininess =10
 
@@ -297,7 +450,8 @@
 
             ENDCG
         } // PASS forwardBase pass for the directional light
-
+//
+		
 		Pass{
 			// pass for additional light sources ( point light in our case)
 		  Tags {"LightMode" = "ForwardAdd" }
@@ -394,7 +548,7 @@
 				{
 					float4 pos : SV_POSITION; // the clip space position
 					float4 posWorld: TEXCOORD1; // world space pos of each vertex
-					float4 normal : NORMAL;
+					float3 normal : NORMAL;
 					float2 uv : TEXCOORD0;
 					//            SHADOW_COORDS(2) // create a struct member
 								//UNITY_FOG_COORDS(1)
@@ -402,8 +556,53 @@
 					//            fixed3 ambient : COLOR1;
 								fixed4 color : COLOR2;
 
-							};
+				};
 
+
+				float3x3 inverse3x3(float3x3 A)
+				{
+					float3 r0 = A[0]; // the first row
+					float3 r1 = A[1];
+					float3 r2 = A[2];
+
+					float3 c0 = A._m00_m10_m20;  // first column
+					float3 c1 = A._m01_m11_m21; // the second column
+					float3 c2 = A._m02_m12_m22; // the third;
+
+					float detA = dot(c0, -cross(c1, c2)); // the cross product is reversed
+					// to change from the right hand system of CG to the left hand system of 
+					// UNITY; All the vectors and matrices in this shader are assumed to 
+					// follow the Unity convention. 
+
+					float3x3 invA = (1 / detA)
+						* float3x3(-cross(c1, c2), // first row
+							-cross(c2, c0), // second row
+							-cross(c0, c1)); // third row
+
+					return invA;
+
+				}
+
+				//float3x3 inverse3x3(float3x3 A)
+				//{
+				//	float3 r0 = A[0]; // the first row
+				//	float3 r1 = A[1];
+				//	float3 r2 = A[2];
+
+				//	float3 c0 = float3(r0[0], r1[0], r2[0]); // first column
+				//	float3 c1 = float3(r0[1], r1[1], r2[1]);
+				//	float3 c2 = float3(r0[2], r1[2], r2[2]);
+
+				//	float detA = dot(c0, cross(c1, c2));
+
+				//	float3x3 invA = (1 / detA)
+				//		* float3x3(cross(c1, c2), // first row
+				//			cross(c2, c0), // second row
+				//			cross(c0, c1)); // third row
+
+				//	return invA;
+
+				//}
 
 
 						   //The right-handed coordinate system use right hand rule to determine the direction of 
@@ -414,7 +613,7 @@
 
 						   // shaders with unity3D: http://xboxoneindiedevelopment.blogspot.kr/2015/02/coming-from-shaders-in-xna-to-shaders.html
 
-						   v2f vert(appdata_full v, uint instanceID : SV_InstanceID)
+				v2f vert(appdata_full v, uint instanceID : SV_InstanceID)
 						   {
 
 							   ////////////////////////////////
@@ -422,17 +621,29 @@
 							   Boid b = _BoidBuffer[instanceID];
 
 							   //float3 scale = b.scale;
-							   float3 scale = _Scale * b.scale; // component wise multiplication
+							   float scale0 = _Scale[0] * b.scale[0]; // component wise multiplication
 
 
-							   float4x4 scaleMat = float4x4(
+							  /* float4x4 scaleMat = float4x4(
 								   scale[0],    0,        0,           0,
 								   0,           scale[1],  0,          0,
 								   0,              0,       scale[2],  0,
 								   0,             0,            0,        1
 								   );
+*/
 
-							   float4x4 object2world = mul(b.boidFrame, scaleMat);
+							  // float4x4 object2world = mul(b.boidFrame, scaleMat);
+
+							   float3x3 R = (float3x3) b.boidFrame; // this is TR, without S (scale)
+
+							   float3x3 RS = scale0 * R;
+							   float4 T = b.boidFrame._m03_m13_m23_m33;
+
+							   float4x4 object2world = float4x4(
+									   float4(RS._m00_m01_m02, T[0]),
+									   float4(RS._m10_m11_m12, T[1]),
+									   float4(RS._m20_m21_m22, T[2]),
+									   float4(0, 0, 0,         T[3]));
 
 							   // transform position to the clip space
 							   v2f o;
@@ -443,7 +654,39 @@
 							   o.posWorld = mul(object2world, v.vertex);
 							   o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
 
-							   o.normal = normalize(mul(object2world, v.normal));
+							   //o.normal = normalize(mul(object2world, v.normal));
+
+							   // get the 3x3 part of 4x4 transform object2world
+							  /* float3x3 L = float3x3(object2world[0].xyz,
+								                     object2world[1].xyz,
+								                     object2world[2].xyz);*/
+
+
+
+							   //float3x3 R = (float3x3) b.boidFrame; // this is TR, without S (scale)
+							   float3x3 Rinv = transpose(R);
+
+							   // transform position to the clip space
+							  // v2f o;
+
+							   // Note float4 pos : SV_POSITION; // the clip space position
+							   // mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, float4(pos, 1.0)));
+							   //o.pos = UnityObjectToClipPos( mul( object2world, v.vertex)  ); // v: the current vertex in the current mesh instance
+							  // o.posWorld = mul(object2world, v.vertex);
+							   //o.pos = mul(UNITY_MATRIX_VP, o.posWorld);
+
+							   //NormalMatrix: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/
+							   // get the 3x3 part of 4x4 transform object2world
+							  /* float3x3 L = float3x3(object2world[0].xyz,
+								   object2world[1].xyz,
+								   object2world[2].xyz);*/
+
+							   //o.normal = normalize( mul( R, v.normal )) ; // for debugging
+							   o.normal = normalize( mul(v.normal, (1 / scale0) * Rinv) );
+
+
+							   //o.normal = normalize(mul(v.normal, inverse3x3(L)));
+
 							   // // just pass the texture coordinate
 							   o.uv = v.texcoord;
 
@@ -474,6 +717,9 @@
 
 						   fixed4 frag(v2f i) : SV_Target
 						   {
+							   // Ignore forward add pass
+							   //return float4(0,0,0,1);
+
 							   //int unity_InstanceID;
 							   //UNITY_SETUP_INSTANCE_ID(i); //  necessary only if any instanced properties are going to be accessed in the fragment Shader
 
@@ -485,11 +731,16 @@
 							   float3 lightDirection;
 							   float attenuation;
 
+							   //https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html?_ga=2.51048685.591554826.1574537830-1174358732.1569135042
+
+							   //Directional lights: (world space direction, 0).
+							   //Other lights: (world space position, 1).
 							   if (0.0 == _WorldSpaceLightPos0.w) // directional light?
 							   {
 								   attenuation = 1.0; // no attenuation
 								   lightDirection =
-									   normalize(_WorldSpaceLightPos0.xyz);
+									   normalize(- _WorldSpaceLightPos0.xyz); // lightDirection is the direction toward the light
+
 							   }
 							   else // point or spot light
 							   {
@@ -501,13 +752,27 @@
 								   lightDirection = normalize(surfacePointToLightSource);
 							   }
 
-							   //float3 ambientLighting =
-							   //	UNITY_LIGHTMODEL_AMBIENT.rgb * i.color.rgb;
+							  /* float3 ambientLighting =
+							   	UNITY_LIGHTMODEL_AMBIENT.rgb * i.color.rgb;*/
+							  // float3 ambientLighting = float3(0, 0, 0);
+
 							   float3 ambientLighting = float3(0, 0, 0);
+
+							   //// for debugging for the point light
+							   float lightToNormal = dot(normalDirection, lightDirection);
+							   if (lightToNormal < 0) {
+								   return float4(1, 0, 0, 1);
+
+							   }
+							   else return float4(0, 1, 0, 1); // for debugging
 
 							   float3 diffuseReflection =
 								   attenuation * _LightColor0.rgb * i.color.rgb
 											   * max(0.0, dot(normalDirection, lightDirection));
+
+								/*float3 diffuseReflection =
+									attenuation * _LightColor0.rgb * i.color.rgb
+												* abs( dot(normalDirection, lightDirection) );*/
 
 							   float3 specularReflection;
 							   if (dot(normalDirection, lightDirection) < 0.0)
@@ -515,6 +780,13 @@
 							   {
 								   specularReflection = float3(0.0, 0.0, 0.0);
 								  // specularReflection = float3(0.0, 0.0, 1.0); // blue
+
+								   //specularReflection = attenuation * _LightColor0.rgb
+									  // * _SpecColor.rgb *
+									  // pow(max(0.0,
+										 //  dot(reflect(-lightDirection, normalDirection),
+											//   viewDirection)),
+										 //  _Shininess); // _Shininess =10
 
 								   // no specular reflection
 							   }
@@ -555,9 +827,9 @@
 
 						   ENDCG
 		} // Pass forwardAdd 
-			   
+		  
 		UsePass "Legacy Shaders/VertexLit/SHADOWCASTER"
-   
-    } // Subshader
-	
+  
+   } // Subshader
+
 } // Shader

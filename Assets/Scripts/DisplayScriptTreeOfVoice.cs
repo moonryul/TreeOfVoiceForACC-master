@@ -76,443 +76,474 @@ public class DisplayScriptTreeOfVoice: MonoBehaviour
         Vector3 CeilingCenter = (CeilingMinCorner + CeilingMaxCorner) / 2f;
         //   for (int i = 0; i < Display.displays.Length; i++)
         // scan the active cameras:
-        foreach (Camera c in Camera.allCameras) // UnityEngine.Class
-        {
-            Debug.Log("camera gameObj name=" + c.gameObject.name);
-            Debug.Log("camera name=" + c.name);
+        //foreach (Camera c in Camera.allCameras) // UnityEngine.Class
+        //{
+        //    Debug.Log("In Display Script: camera gameObj name=" + c.gameObject.name);
+        //    Debug.Log("camera name=" + c.name);
 
-            Debug.Log("camera target display [index] =" + c.targetDisplay);
+        //    Debug.Log("camera target display [index] =" + c.targetDisplay);
 
-            Debug.Log("vertical field of view ="); Debug.Log(c.fieldOfView);
-            Debug.Log("aspect (=w/h) = "); Debug.Log(c.aspect);
-            //By default the aspect ratio is automatically calculated from the screen's aspect ratio,
-            //even if the camera is not rendering to full area. If you modify the aspect ratio of the camera, 
-            //the value will stay until you call camera.ResetAspect(); which resets the aspect to the screen's aspect ratio.
+        //    Debug.Log("vertical field of view ="); Debug.Log(c.fieldOfView);
+        //    Debug.Log("aspect (=w/h) according to the screen = "); Debug.Log(c.aspect);
+        //    //By default the aspect ratio is automatically calculated from the screen's aspect ratio,
+        //    //even if the camera is not rendering to full area. 
+        //    //If you modify the aspect ratio of the camera, 
+        //    //the value will stay until you call camera.ResetAspect(); 
+        //    //which resets the aspect to the screen's aspect ratio.
 
-            // bool check = c.name == "MainCamera";
+        //    // bool check = c.name == "MainCamera";
 
-            //Camera c = myCams[i];
+        //    //Camera c = myCams[i];
 
-            // if (c.name == "MainCamera") return;
-
-
-            //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
-            //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
-
-            //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
-            //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
+        //    // if (c.name == "MainCamera") return;
 
 
-            if (c.name == "CameraToGround")
-            {
-                Debug.Log(c.name);
+        //    //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
+        //    //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
 
-                Debug.Log("CameraToGround: camera pos=");
-                Debug.Log(c.transform.position);
-
-                // targetPos on the ground
-
-                Vector3 targetPos = GroundCenter; 
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
+        //    //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
+        //    //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
 
 
-                Vector3 vecToTarget = targetPos - c.transform.position;
+        //    if (c.name == "CameraToGround")
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
 
-                Debug.Log("the vector to the target pos");
-                Debug.Log(vecToTarget);
+        //        Debug.Log("CameraToGround: camera pos=");
+        //        Debug.Log(c.transform.position);
 
-                float heightOfFOV = (targetPos.x - GroundMinCorner.x);
+        //        // targetPos on the ground
 
-                Debug.Log("the height of the field of view:");
-                Debug.Log(heightOfFOV);
+        //        Vector3 targetPos = GroundCenter; 
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
-                Debug.Log("computed field of view:");
-                Debug.Log(fieldOfView);
+
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
+
+        //        Debug.Log("the vector to the target pos");
+        //        Debug.Log(vecToTarget);
+
+        //        // compute the new camera frame
+        //        Vector3 camZAxis = vecToTarget.normalized;
+        //        Vector3 camXAxis = Vector3.Cross(Vector3.up, camZAxis);
+        //        Vector3 camYAxis = Vector3.Cross(camZAxis, camXAxis);
+
+        //        c.transform.forward = camZAxis;
+        //        c.transform.up = camYAxis;
+        //        c.transform.right = camXAxis;
+
+        //        //float heightOfFOV = (targetPos.x - GroundMinCorner.x);
+
+        //        //Debug.Log("the height of the field of view:");
+        //        //Debug.Log(heightOfFOV);
+
+        //        //float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //        //                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
+        //        //Debug.Log("computed field of view:");
+        //        //Debug.Log(fieldOfView);
 
                
-                float aspect = Mathf.Abs(2 * GroundMinCorner.z) / (2f * heightOfFOV);
-                Debug.Log("computed aspect (width/height):");
-                Debug.Log(aspect);
+        //        //float aspect = Mathf.Abs(2 * GroundMinCorner.z) / (2f * heightOfFOV);
+        //        //Debug.Log("computed aspect (width/height):");
+        //        //Debug.Log(aspect);
 
-                //Debug.Log("computed aspect2 (w/h): = equal to the first?");
-                //float  aspect = Mathf.Abs(GroundMinCorner.x) / (2 * Mathf.Abs(GroundMinCorner.z) );
-                //Debug.Log(aspect);
-
-
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
-
-            }
+        //        ////Debug.Log("computed aspect2 (w/h): = equal to the first?");
+        //        ////float  aspect = Mathf.Abs(GroundMinCorner.x) / (2 * Mathf.Abs(GroundMinCorner.z) );
+        //        ////Debug.Log(aspect);
 
 
+        //        //c.fieldOfView = fieldOfView;
+        //        //c.aspect = aspect;
+
+        //    }
 
 
-            if (c.name == "CameraToGroundLeft")
-            {
-                Debug.Log(c.name);
-
-                Debug.Log("CameraToGroundLeft: camera pos=");
-                Debug.Log(c.transform.position);
-
-                // targetPos on the ground
-
-                Vector3 targetPos = new Vector3( (GroundMinCorner.x + GroundCenter.x)/ 2f, GroundMinCorner.y, (GroundMinCorner.z + GroundMaxCorner.z)/2f ); 
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
 
 
-                Debug.Log("the vector to the target:");  
-                Vector3 vecToTarget = targetPos - c.transform.position;
-                Debug.Log(vecToTarget);
+        //    if (c.name == "CameraToGroundLeft")
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
 
-                float heightOfFOV = (targetPos.x - GroundMinCorner.x);   
+        //        Debug.Log("CameraToGroundLeft: camera pos=");
+        //        Debug.Log(c.transform.position);
 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan( heightOfFOV  / vecToTarget.magnitude);
+        //        // targetPos on the ground
 
-                Debug.Log("computed field of view:");
-                Debug.Log(fieldOfView);
-
-                Debug.Log("computed aspect (width/height):");
-                float aspect = Mathf.Abs(2 * GroundMinCorner.z) / (2f * heightOfFOV);
-                Debug.Log(aspect);
-
-                //Debug.Log("computed aspect2 (w/h): = equal to the first?");
-                //float  aspect = Mathf.Abs(GroundMinCorner.x) / (2 * Mathf.Abs(GroundMinCorner.z) );
-                //Debug.Log(aspect);
+        //        Vector3 targetPos = new Vector3( (GroundMinCorner.x + GroundCenter.x)/ 2f, GroundMinCorner.y, (GroundMinCorner.z + GroundMaxCorner.z)/2f ); 
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
 
 
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
+        //        Debug.Log("the vector to the target:");  
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
+        //        Debug.Log(vecToTarget);
 
-            }
+        //        float heightOfFOV = (targetPos.x - GroundMinCorner.x);   
 
+        //        float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //                         Mathf.Atan( heightOfFOV  / vecToTarget.magnitude);
 
-            //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
-            //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
+        //        Debug.Log("computed field of view:");
+        //        Debug.Log(fieldOfView);
 
-            //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
-            //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
+        //        Debug.Log("computed aspect (width/height):");
+        //        float aspect = Mathf.Abs(2 * GroundMinCorner.z) / (2f * heightOfFOV);
+        //        Debug.Log(aspect);
 
-            if (c.name == "CameraToGroundRight")
-            {
-                Debug.Log(c.name);
-
-                Debug.Log("CameraToGroundRight: camera pos=");
-                Debug.Log(c.transform.position);
-
-                Vector3 targetPos = new Vector3((GroundMaxCorner.x + GroundCenter.x) / 2f, GroundMaxCorner.y, (GroundMinCorner.z + GroundMaxCorner.z) / 2f);
-               // Vector3 targetPos =  new Vector3(GroundMaxCorner.x/2f, GroundMaxCorner.y, 0f) ;
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
+        //        //Debug.Log("computed aspect2 (w/h): = equal to the first?");
+        //        //float  aspect = Mathf.Abs(GroundMinCorner.x) / (2 * Mathf.Abs(GroundMinCorner.z) );
+        //        //Debug.Log(aspect);
 
 
-                Debug.Log("computed  field of view:");
-                Vector3 vecToTarget = targetPos - c.transform.position;
+        //        c.fieldOfView = fieldOfView;
+        //        c.aspect = aspect;
 
-                // The height ( on the y axis of the camera) of the camera field of view
-                float heightOfFOV = Mathf.Abs( targetPos.x - GroundMaxCorner.x );
-                //float heightOnAxis = (targetPos - new Vector3(0f, 0f, GroundMinCorner.z)).magnitude;
+        //    }
+
+
+        //    //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
+        //    //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
+
+        //    //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
+        //    //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
+
+        //    if (c.name == "CameraToGroundRight")
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
+
+        //        Debug.Log("CameraToGroundRight: camera pos=");
+        //        Debug.Log(c.transform.position);
+
+        //        Vector3 targetPos = new Vector3((GroundMaxCorner.x + GroundCenter.x) / 2f, GroundMaxCorner.y, (GroundMinCorner.z + GroundMaxCorner.z) / 2f);
+        //       // Vector3 targetPos =  new Vector3(GroundMaxCorner.x/2f, GroundMaxCorner.y, 0f) ;
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
+
+
+        //        Debug.Log("computed  field of view:");
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
+
+        //        // The height ( on the y axis of the camera) of the camera field of view
+        //        float heightOfFOV = Mathf.Abs( targetPos.x - GroundMaxCorner.x );
+        //        //float heightOnAxis = (targetPos - new Vector3(0f, 0f, GroundMinCorner.z)).magnitude;
                 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
-                Debug.Log(fieldOfView);
+        //        float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //                         Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
+        //        Debug.Log(fieldOfView);
 
-                Debug.Log("computed aspect (width/height):");
-                float aspect = Mathf.Abs( 2* GroundMaxCorner.z) / (2f * heightOfFOV);
-                Debug.Log(aspect);
+        //        Debug.Log("computed aspect (width/height):");
+        //        float aspect = Mathf.Abs( 2* GroundMaxCorner.z) / (2f * heightOfFOV);
+        //        Debug.Log(aspect);
 
 
-                //Debug.Log("computed aspect2 (w/h):");
-                //float aspect = Mathf.Abs(GroundMaxCorner.x) / (2 * Mathf.Abs(GroundMaxCorner.z) );
-                //Debug.Log(aspect);
+        //        //Debug.Log("computed aspect2 (w/h):");
+        //        //float aspect = Mathf.Abs(GroundMaxCorner.x) / (2 * Mathf.Abs(GroundMaxCorner.z) );
+        //        //Debug.Log(aspect);
 
 
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
+        //        c.fieldOfView = fieldOfView;
+        //        c.aspect = aspect;
 
-            }
+        //    }
 
-            //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
-            //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
+        //    //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
+        //    //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
 
-            //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
-            //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
+        //    //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
+        //    //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
 
-            if (c.name == "CameraToCeiling")
-            //CameraToCeilingLeft
-            {
+        //    if (c.name == "CameraToCeiling")
+        //    //CameraToCeilingLeft
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
+        //        Debug.Log("CameraToCeiling: camera pos=");
+        //        Debug.Log(c.transform.position);
 
-                Debug.Log("CameraToCeiling: camera pos=");
-                Debug.Log(c.transform.position);
+        //        Vector3 targetPos = CeilingCenter;
+        //        // Vector3 targetPos = new Vector3(CeilingMinCorner.x / 2f, 0f, 0f);
 
-                Vector3 targetPos = CeilingCenter;
-                // Vector3 targetPos = new Vector3(CeilingMinCorner.x / 2f, 0f, 0f);
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
 
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
 
+        //        Debug.Log("the vector to the target:");
 
-                Debug.Log("the vector to the target:");
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
+        //        Debug.Log(vecToTarget);
 
-                Vector3 vecToTarget = targetPos - c.transform.position;
-                Debug.Log(vecToTarget);
+        //        // compute the new camera frame
+        //        Vector3 camZAxis = vecToTarget.normalized;
+        //        Vector3 camXAxis = Vector3.Cross(Vector3.up, camZAxis);
+        //        Vector3 camYAxis = Vector3.Cross(camZAxis, camXAxis);
 
-                float heightOfFOV = (targetPos.x - CeilingMinCorner.x);
-                //float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMinCorner.z)).magnitude;
+        //        c.transform.forward = camZAxis;
+        //        c.transform.up = camYAxis;
+        //        c.transform.right = camXAxis;
 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
 
-                Debug.Log("computed field of view:");
-                Debug.Log(fieldOfView);
+        //        //float heightOfFOV = (targetPos.x - CeilingMinCorner.x);
+        //        ////float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMinCorner.z)).magnitude;
 
-                Debug.Log("computed aspect  (width/height):");
-                float aspect = Mathf.Abs(2 * CeilingMinCorner.z) / (2f * heightOfFOV);
-                Debug.Log(aspect);
+        //        //float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //        //                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
 
+        //        //Debug.Log("computed field of view:");
+        //        //Debug.Log(fieldOfView);
 
-                //Debug.Log("computed aspect (width/height): ");
-                //float aspect = Mathf.Abs( CeilingMinCorner.x) / (2 * Mathf.Abs(CeilingMinCorner.z));
-                //Debug.Log(aspect);
+        //        //Debug.Log("computed aspect  (width/height):");
+        //        //float aspect = Mathf.Abs(2 * CeilingMinCorner.z) / (2f * heightOfFOV);
+        //        //Debug.Log(aspect);
 
 
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
-            }
+        //        ////Debug.Log("computed aspect (width/height): ");
+        //        ////float aspect = Mathf.Abs( CeilingMinCorner.x) / (2 * Mathf.Abs(CeilingMinCorner.z));
+        //        ////Debug.Log(aspect);
 
 
-            if (c.name == "CameraToCeilingLeft")
-            //CameraToCeilingLeft
-            {
+        //        //c.fieldOfView = fieldOfView;
+        //        //c.aspect = aspect;
+        //    }
 
-                Debug.Log("CameraToCeilingLeft: camera pos=");
-                Debug.Log(c.transform.position);
 
-                Vector3 targetPos = new Vector3((CeilingMinCorner.x + CeilingCenter.x) / 2f, CeilingMinCorner.y, (CeilingMinCorner.z + CeilingMaxCorner.z) / 2f);
-                // Vector3 targetPos = new Vector3(CeilingMinCorner.x / 2f, 0f, 0f);
+        //    if (c.name == "CameraToCeilingLeft")
+        //    //CameraToCeilingLeft
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
+        //        Debug.Log("CameraToCeilingLeft: camera pos=");
+        //        Debug.Log(c.transform.position);
 
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
+        //        Vector3 targetPos = new Vector3((CeilingMinCorner.x + CeilingCenter.x) / 2f, CeilingMinCorner.y, (CeilingMinCorner.z + CeilingMaxCorner.z) / 2f);
+        //        // Vector3 targetPos = new Vector3(CeilingMinCorner.x / 2f, 0f, 0f);
 
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
 
-                Debug.Log("computed field of vie:");
 
-                Vector3 vecToTarget = targetPos - c.transform.position;
+        //        Debug.Log("computed field of vie:");
 
-                float heightOfFOV = (targetPos.x - CeilingMinCorner.x);
-                //float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMinCorner.z)).magnitude;
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
-                Debug.Log(fieldOfView);
+        //        float heightOfFOV = (targetPos.x - CeilingMinCorner.x);
+        //        //float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMinCorner.z)).magnitude;
 
-                Debug.Log("computed aspect  (width/height):");
-                float aspect = Mathf.Abs( 2* CeilingMinCorner.z) / (2f * heightOfFOV);
-                Debug.Log(aspect);
+        //        float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //                         Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
+        //        Debug.Log(fieldOfView);
 
+        //        Debug.Log("computed aspect  (width/height):");
+        //        float aspect = Mathf.Abs( 2* CeilingMinCorner.z) / (2f * heightOfFOV);
+        //        Debug.Log(aspect);
 
-                //Debug.Log("computed aspect (width/height): ");
-                //float aspect = Mathf.Abs( CeilingMinCorner.x) / (2 * Mathf.Abs(CeilingMinCorner.z));
-                //Debug.Log(aspect);
 
+        //        //Debug.Log("computed aspect (width/height): ");
+        //        //float aspect = Mathf.Abs( CeilingMinCorner.x) / (2 * Mathf.Abs(CeilingMinCorner.z));
+        //        //Debug.Log(aspect);
 
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
-            }
 
-            //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
-            //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
+        //        c.fieldOfView = fieldOfView;
+        //        c.aspect = aspect;
+        //    }
 
-            //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
-            //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
+        //    //public Vector3 GroundMinCorner = new Vector3(-10f, 0f, -10f);
+        //    //public Vector3 GroundMaxCorner = new Vector3(10f, 0f, 10f);
 
-            if (c.name == "CameraToCeilingRight")
-            {
+        //    //public Vector3 CeilingMinCorner = new Vector3(-10f, 12f, -10f);
+        //    //public Vector3 CeilingMaxCorner = new Vector3(10f, 12f, 10f);
 
-                Debug.Log("CameraToCeilingRight: camera pos=");
-                Debug.Log(c.transform.position);
+        //    if (c.name == "CameraToCeilingRight")
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
+        //        Debug.Log("CameraToCeilingRight: camera pos=");
+        //        Debug.Log(c.transform.position);
 
-                Vector3 targetPos = new Vector3((CeilingMaxCorner.x + CeilingCenter.x) / 2f, CeilingMaxCorner.y, (CeilingMinCorner.z + CeilingMaxCorner.z) / 2f);
-                //Vector3 targetPos = new Vector3 ( CeilingMaxCorner.x/2f, 0f, 0f);
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
+        //        Vector3 targetPos = new Vector3((CeilingMaxCorner.x + CeilingCenter.x) / 2f, CeilingMaxCorner.y, (CeilingMinCorner.z + CeilingMaxCorner.z) / 2f);
+        //        //Vector3 targetPos = new Vector3 ( CeilingMaxCorner.x/2f, 0f, 0f);
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
 
 
-                Debug.Log("computed field of vie:");
+        //        Debug.Log("computed field of vie:");
 
-                Vector3 vecToTarget = targetPos - c.transform.position;
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
 
-                float heightOfFOV = Mathf.Abs(targetPos.x - CeilingMaxCorner.x);
-              //  float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMaxCorner.z)).magnitude;
+        //        float heightOfFOV = Mathf.Abs(targetPos.x - CeilingMaxCorner.x);
+        //      //  float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMaxCorner.z)).magnitude;
 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
-                Debug.Log(fieldOfView);
+        //        float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //                         Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
+        //        Debug.Log(fieldOfView);
 
-                Debug.Log("computed aspect (width/height):");
-                float aspect = Mathf.Abs(2 * CeilingMaxCorner.z) / (2f * heightOfFOV);
-                Debug.Log(aspect);
+        //        Debug.Log("computed aspect (width/height):");
+        //        float aspect = Mathf.Abs(2 * CeilingMaxCorner.z) / (2f * heightOfFOV);
+        //        Debug.Log(aspect);
 
 
-                //Debug.Log("computed aspect2 (w/h) ");
-                //float aspect = Mathf.Abs(CeilingMaxCorner.x) / (2 * Mathf.Abs(CeilingMaxCorner.z));
+        //        //Debug.Log("computed aspect2 (w/h) ");
+        //        //float aspect = Mathf.Abs(CeilingMaxCorner.x) / (2 * Mathf.Abs(CeilingMaxCorner.z));
 
 
 
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
-            }
+        //        c.fieldOfView = fieldOfView;
+        //        c.aspect = aspect;
+        //    }
 
 
-            if (c.name == "CameraToFrontWall" || c.name == "Main Camera")
-            {
-                
-                Debug.Log( c.name + ": camera pos=");
-                Debug.Log(c.transform.position);
+        //    if (c.name == "CameraToFrontWall" )
+        //    {
+        //        Debug.Log("Modify Camera Setting" + c.name);
+        //        Debug.Log( c.name + ": camera pos=");
+        //        Debug.Log(c.transform.position);
 
-                Vector3 targetPos = new Vector3(0.0f, (CeilingMinCorner.y + GroundMinCorner.y) / 2.0f, CeilingMinCorner.z *1.5f);
+        //        Vector3 targetPos = new Vector3(0.0f, 0.0f, 0.0f); // the center of the world
 
-                Debug.Log("camera targetPos=");
-                Debug.Log(targetPos);
+        //        Debug.Log("camera targetPos=");
+        //        Debug.Log(targetPos);
 
 
-                Debug.Log("computed target vector:");
+        //        Debug.Log("computed target vector:");
 
-                Vector3 vecToTarget = targetPos - c.transform.position;
+        //        Vector3 vecToTarget = targetPos - c.transform.position;
 
-                Debug.Log(vecToTarget);
-                float heightOfFOV =   Mathf.Abs(targetPos.y - CeilingMinCorner.y);
-                //  float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMaxCorner.z)).magnitude;
+        //        Debug.Log(vecToTarget);
 
-                float fieldOfView = 2.0f * Mathf.Rad2Deg *
-                                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
+        //        // compute the new camera frame
+        //        Vector3 camZAxis = vecToTarget.normalized;
+        //        Vector3 camXAxis = Vector3.Cross(Vector3.up, camZAxis);
+        //        Vector3 camYAxis = Vector3.Cross(camZAxis, camXAxis);
 
+        //        c.transform.forward = camZAxis;
+        //        c.transform.up = camYAxis;
+        //        c.transform.right = camXAxis;
 
-                Debug.Log("computed field of view:");
-                Debug.Log(fieldOfView);
+        //        // float heightOfFOV =   Mathf.Abs(targetPos.y - CeilingMinCorner.y);
+        //        //  float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMaxCorner.z)).magnitude;
 
-                Debug.Log("computed aspect (width/height):");
+        //        //float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //        //                 Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
 
-                float aspect = Mathf.Abs(2f * CeilingMaxCorner.x) / (2f * heightOfFOV);
 
+        //        //Debug.Log("computed field of view:");
+        //        // Debug.Log(fieldOfView);
 
-                Debug.Log(aspect);
+        //        // Debug.Log("computed aspect (width/height):");
 
+        //        // float aspect = Mathf.Abs(2f * CeilingMaxCorner.x) / (2f * heightOfFOV);
 
 
-                c.fieldOfView = fieldOfView;
-                c.aspect = aspect;
+        //        //Debug.Log(aspect);
 
-            }
 
-            // The canvas for the event camera is located at z =0; The size of the canvas is the same as the size of
-            // the world in which boids move. The event camera for the canvas is set in UISetActionPlan.cs
 
-            //m_canvasObj.GetComponent<RectTransform>().transform.localScale)
+        //        //c.fieldOfView = fieldOfView;
+        //        //c.aspect = aspect;
 
-            //if ( c.name == "Event Camera")
-            //{
+        //    }
 
-            //    Debug.Log(c.name + ": camera pos=");
-            //    Debug.Log(c.transform.position);
+        //    // The canvas for the event camera is located at z =0; The size of the canvas is the same as the size of
+        //    // the world in which boids move. The event camera for the canvas is set in UISetActionPlan.cs
 
-            //    Vector3 targetPos = new Vector3(0.0f, (CeilingMinCorner.y + GroundMinCorner.y) / 2.0f, CeilingMinCorner.z);
+        //    //m_canvasObj.GetComponent<RectTransform>().transform.localScale)
 
-            //    Debug.Log("camera targetPos=");
-            //    Debug.Log(targetPos);
+        //    //if ( c.name == "Event Camera")
+        //    //{
 
+        //    //    Debug.Log(c.name + ": camera pos=");
+        //    //    Debug.Log(c.transform.position);
 
-            //    Debug.Log("computed target vector:");
+        //    //    Vector3 targetPos = new Vector3(0.0f, (CeilingMinCorner.y + GroundMinCorner.y) / 2.0f, CeilingMinCorner.z);
 
-            //    Vector3 vecToTarget = targetPos - c.transform.position;
+        //    //    Debug.Log("camera targetPos=");
+        //    //    Debug.Log(targetPos);
 
-            //    Debug.Log(vecToTarget);
-            //    float heightOfFOV = Mathf.Abs(targetPos.y - CeilingMinCorner.y);
-            //    //  float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMaxCorner.z)).magnitude;
 
-            //    float fieldOfView = 2.0f * Mathf.Rad2Deg *
-            //                     Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
+        //    //    Debug.Log("computed target vector:");
 
+        //    //    Vector3 vecToTarget = targetPos - c.transform.position;
 
-            //    Debug.Log("computed field of view:");
-            //    Debug.Log(fieldOfView);
+        //    //    Debug.Log(vecToTarget);
+        //    //    float heightOfFOV = Mathf.Abs(targetPos.y - CeilingMinCorner.y);
+        //    //    //  float heightOnAxis = (targetPos - new Vector3(0f, 0f, CeilingMaxCorner.z)).magnitude;
 
-            //    Debug.Log("computed aspect (width/height):");
+        //    //    float fieldOfView = 2.0f * Mathf.Rad2Deg *
+        //    //                     Mathf.Atan(heightOfFOV / vecToTarget.magnitude);
 
-            //    float aspect = Mathf.Abs( 2f * CeilingMaxCorner.x) / (2f * heightOfFOV);
 
+        //    //    Debug.Log("computed field of view:");
+        //    //    Debug.Log(fieldOfView);
 
-            //    Debug.Log(aspect);
+        //    //    Debug.Log("computed aspect (width/height):");
 
+        //    //    float aspect = Mathf.Abs( 2f * CeilingMaxCorner.x) / (2f * heightOfFOV);
 
 
-            //    c.fieldOfView = fieldOfView;
-            //    c.aspect = aspect;
+        //    //    Debug.Log(aspect);
 
-            //}
 
 
-            //if (c.name == "CameraToLeftWall")
-            //{
-            //    //Debug.Log("camera pos=");
-            //    //Debug.Log(c.transform.position);
+        //    //    c.fieldOfView = fieldOfView;
+        //    //    c.aspect = aspect;
 
+        //    //}
 
-            //    Vector3 targetPos = new Vector3(GroundMinCorner.x, (CeilingMaxCorner.y + GroundMinCorner.y) / 2.0f, 0.0f);
 
-            //    //Debug.Log("camera targetPos=");
-            //    //Debug.Log(targetPos);
+        //    //if (c.name == "CameraToLeftWall")
+        //    //{
+        //    //    //Debug.Log("camera pos=");
+        //    //    //Debug.Log(c.transform.position);
 
 
-            //    //Debug.Log("computed field of view:");
+        //    //    Vector3 targetPos = new Vector3(GroundMinCorner.x, (CeilingMaxCorner.y + GroundMinCorner.y) / 2.0f, 0.0f);
 
-            //    Vector3 vecToTarget = targetPos - c.transform.position;
+        //    //    //Debug.Log("camera targetPos=");
+        //    //    //Debug.Log(targetPos);
 
-            //    float fieldOfView = 2.0f * Mathf.Rad2Deg * Mathf.Atan((CeilingMaxCorner.y - GroundMinCorner.y) / 2.0f / vecToTarget.magnitude);
-            //  //  Debug.Log(fieldOfView);
 
-            //   // Debug.Log("computed aspect:");
-            //    float aspect = (GroundMaxCorner.z - GroundMinCorner.z) / (CeilingMaxCorner.y - GroundMinCorner.y);
-            //   // Debug.Log(aspect);
+        //    //    //Debug.Log("computed field of view:");
 
-            //    c.fieldOfView = fieldOfView;
-            //    c.aspect = aspect;
-            //}
+        //    //    Vector3 vecToTarget = targetPos - c.transform.position;
 
+        //    //    float fieldOfView = 2.0f * Mathf.Rad2Deg * Mathf.Atan((CeilingMaxCorner.y - GroundMinCorner.y) / 2.0f / vecToTarget.magnitude);
+        //    //  //  Debug.Log(fieldOfView);
 
-            //if (c.name == "CameraToRightWall")
-            //{
+        //    //   // Debug.Log("computed aspect:");
+        //    //    float aspect = (GroundMaxCorner.z - GroundMinCorner.z) / (CeilingMaxCorner.y - GroundMinCorner.y);
+        //    //   // Debug.Log(aspect);
 
-            //    //Debug.Log("camera pos=");
-            //    //Debug.Log(c.transform.position);
+        //    //    c.fieldOfView = fieldOfView;
+        //    //    c.aspect = aspect;
+        //    //}
 
 
-            //    Vector3 targetPos = new Vector3(GroundMaxCorner.x, (CeilingMaxCorner.y + GroundMinCorner.y) / 2.0f, 0.0f);
+        //    //if (c.name == "CameraToRightWall")
+        //    //{
 
-            //    //Debug.Log("camera targetPos=");
-            //    //Debug.Log(targetPos);
+        //    //    //Debug.Log("camera pos=");
+        //    //    //Debug.Log(c.transform.position);
 
-            //    //Debug.Log("computed field of vie:");
 
-            //    Vector3 vecToTarget = targetPos - c.transform.position;
+        //    //    Vector3 targetPos = new Vector3(GroundMaxCorner.x, (CeilingMaxCorner.y + GroundMinCorner.y) / 2.0f, 0.0f);
 
-            //    float fieldOfView = 2.0f * Mathf.Rad2Deg * Mathf.Atan((CeilingMaxCorner.y - GroundMinCorner.y) / 2.0f / vecToTarget.magnitude);
-            //    Debug.Log(fieldOfView);
+        //    //    //Debug.Log("camera targetPos=");
+        //    //    //Debug.Log(targetPos);
 
-            //    Debug.Log("computed  aspect:");
-            //    float aspect = (GroundMaxCorner.z - GroundMinCorner.z) / (CeilingMaxCorner.y - GroundMinCorner.y);
-            //    Debug.Log(aspect);
+        //    //    //Debug.Log("computed field of vie:");
 
-            //    c.fieldOfView = fieldOfView;
-            //    c.aspect = aspect;
-            //}
+        //    //    Vector3 vecToTarget = targetPos - c.transform.position;
 
+        //    //    float fieldOfView = 2.0f * Mathf.Rad2Deg * Mathf.Atan((CeilingMaxCorner.y - GroundMinCorner.y) / 2.0f / vecToTarget.magnitude);
+        //    //    Debug.Log(fieldOfView);
 
-        } // for all cameras
+        //    //    Debug.Log("computed  aspect:");
+        //    //    float aspect = (GroundMaxCorner.z - GroundMinCorner.z) / (CeilingMaxCorner.y - GroundMinCorner.y);
+        //    //    Debug.Log(aspect);
+
+        //    //    c.fieldOfView = fieldOfView;
+        //    //    c.aspect = aspect;
+        //    //}
+
+
+        //} // for all cameras
 
 
     } // OnValidate()

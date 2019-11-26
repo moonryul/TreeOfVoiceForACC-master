@@ -85,9 +85,17 @@ using System.Text;
 
 //ActionPlanController has 3 main methods: InitActions, UpdateActionValue, UpdateActionTime, UpdateActionSlot, RedrawActionPlan
 // each of which is invoked directly by the main CommHub script or through delegates which is controlled by main CommHub
+
+
+
 public class ActionPlanController : MonoBehaviour
 {
-
+    public class TimeInterval
+    {
+        public (float, float) interval;
+        public int actionIndex;
+        public List<TimeInterval> children = new List<TimeInterval>();
+    }
     public class Action
     {
         public List<float> T;
@@ -133,12 +141,13 @@ public class ActionPlanController : MonoBehaviour
                                          // The actuall scroll rect size is set to the size of the canvas
 
     public Dictionary<String, List<Action> > m_actionPlan; //// first defined in SimpleBoidsTreeOfVoice class
+    public Dictionary<String, TimeInterval> m_actionPlanWithBinaryTree;
+              
 
 
     int m_lastScreenWidth;
     int m_lastScreenHeight;
-    bool stay = true;
-
+    
  
     public MyScrollRect m_myScrollRect;  // set in the inspector
 
@@ -898,7 +907,7 @@ public class ActionPlanController : MonoBehaviour
                                                  }
              },
 
-              { "_ScaleFactor", new List<Action> {  new Action() { T  = new List<float>{0,  390 },  V =1f },
+              { "_ScaleFactor", new List<Action> {  new Action() { T  = new List<float>{0,  390 },  V =1.0f },
 
                                                   }
              },
@@ -1133,15 +1142,15 @@ public class ActionPlanController : MonoBehaviour
             //
             { "_GroundMinHue", new List<Action> {
 
-                new Action() { T = new List<float>{ 0, 60 }, V =  0f},
-                       new Action() { T =  new List<float>{60,100 },  V = 0f},
-                            new Action() { T =  new List<float>{100, 140 }, V = 0.0f },
+                new Action() { T = new List<float>{ 0, 60 }, V = -180f},
+                       new Action() { T =  new List<float>{60,100 },  V = -180f},
+                            new Action() { T =  new List<float>{100, 140 }, V = -180.0f },
 
-                new Action() { T =  new List<float>{140,200 }, V =  0.0f },
+                new Action() { T =  new List<float>{140,200 }, V =  -180.0f },
 
-                    new Action() { T =  new List<float>{200,300 },  V = 0.0f },
-                      new Action() { T=  new List<float>{300, 360 }, V = 0.0f},
-                    new Action() { T =  new List<float>{360, 390 }, V = 0.0f },
+                    new Action() { T =  new List<float>{200,300 },  V = -180.0f },
+                      new Action() { T=  new List<float>{300, 360 }, V = -180.0f},
+                    new Action() { T =  new List<float>{360, 390 }, V = -180.0f },
 
 
                                                }
@@ -1149,17 +1158,17 @@ public class ActionPlanController : MonoBehaviour
 
             { "_GroundMaxHue", new List<Action> {
 
-                new Action() { T = new List<float> {0, 60}, V = 180f },
-                    new Action() { T = new List<float> {60,100 },  V = 180f},
-                         new Action() { T = new List<float> {100,140 },  V = 180f },
+                new Action() { T = new List<float> {0, 60}, V = 0f },
+                    new Action() { T = new List<float> {60,100 },  V = 0f},
+                         new Action() { T = new List<float> {100,140 },  V = 0f },
 
-                new Action() { T = new List<float> {140,200},  V =180f  },
+                new Action() { T = new List<float> {140,200},  V =0f  },
 
-                    new Action() { T =  new List<float>{200, 230 }, V = 180f  },
-                        new Action() { T=  new List<float>{230, 300 }, V =  180f },
+                    new Action() { T =  new List<float>{200, 230 }, V = 0f  },
+                        new Action() { T=  new List<float>{230, 300 }, V =  0f },
 
-                new Action() { T =  new List<float>{300, 360 },  V =180f },
-                    new Action() { T =  new List<float>{360, 390 },  V =180f },
+                new Action() { T =  new List<float>{300, 360 },  V =0f },
+                    new Action() { T =  new List<float>{360, 390 },  V =0f },
 
                                                }
              },
@@ -1240,17 +1249,17 @@ public class ActionPlanController : MonoBehaviour
             //
             { "_CeilingMinHue", new List<Action> {
 
-                new Action() { T =  new List<float>{0, 30 }, V =  180f },
+                new Action() { T =  new List<float>{0, 30 }, V =  0f },
 
-                    new Action() { T =  new List<float>{30, 60 }, V = 180f } ,
-                        new Action() { T =  new List<float>{60, 100 }, V =  180f },
-                            new Action() { T =  new List<float>{100, 140 }, V =180f },
+                    new Action() { T =  new List<float>{30, 60 }, V = 0f } ,
+                        new Action() { T =  new List<float>{60, 100 }, V =  0f },
+                            new Action() { T =  new List<float>{100, 140 }, V =0f },
 
-                new Action() { T =  new List<float>{140, 230 }, V = 180f },
-                         new Action() { T =  new List<float>{230,300 },  V = 180f },
+                new Action() { T =  new List<float>{140, 230 }, V = 0f },
+                         new Action() { T =  new List<float>{230,300 },  V = 0f },
 
-                new Action() { T=  new List<float>{300, 360 }, V=  180f },
-                    new Action() { T =  new List<float>{360,390 }, V =  180f },
+                new Action() { T=  new List<float>{300, 360 }, V=  0f },
+                    new Action() { T =  new List<float>{360,390 }, V =  0f },
 
 
                                                }
@@ -1353,18 +1362,18 @@ public class ActionPlanController : MonoBehaviour
 
              //m_boids.DetermineParamValue("_LEDChainHeight", currTime, ref m_LEDChainHeight);
        // m_boids.DetermineParamValue("_SphericalMotion", currTime, ref m_boids.m_SphericalMotion);
-       { "_HemisphereGroundPosition", new List<Action> {
+       { "_Hemisphere", new List<Action> {
            // positive or zero => the upper hemisphere above the _HemisphereGroundPosition
            // negative => the lower hemisphere below the _HemisphereGroundPosition
 
-                new Action() { T =  new List<float>{0, 140 }, V = 0.0f  }, // 
+                new Action() { T =  new List<float>{0, 140 }, V = 1  }, // 
 
-                new Action() { T = new List<float> {140,230 },  V =  0.0f },
-                    new Action() { T =  new List<float>{230, 300 }, V =-0.1f },
+                new Action() { T = new List<float> {140,230 },  V =  1 },
+                    new Action() { T =  new List<float>{230, 300 }, V =0 },
 
 
-                new Action() { T= new List<float> {300,360 }, V =  -0.1f },
-                    new Action() { T =  new List<float>{360,390 }, V = -0.1f  },
+                new Action() { T= new List<float> {300,360 }, V =  0 },
+                    new Action() { T =  new List<float>{360,390 }, V = 0 },
 
                 }
              },
@@ -1373,7 +1382,108 @@ public class ActionPlanController : MonoBehaviour
 
     }; //    actionPlan = new Dictionary<String, List<Action> >  ()
 
+
+        // Create a binary search tree of time intervals: Node [T1,T2 ] has value V;
+        // [T2,T3] < [T1,T2], it goes to the left subtree of [T1,T2] etc.
+        // => Create a dictionary whose keys are action names and whose values are binary
+        // trees of  time intervals. 
+
+        //Dictionary<String, TimeInterval> ActionPlanWithBinaryTree
+        //         = new Dictionary<String, TimeInterval>();
+        m_actionPlanWithBinaryTree = new Dictionary<String, TimeInterval>();
+
+        CreateActionPlanWithBinaryTree(m_actionPlan, m_actionPlanWithBinaryTree);
+
+
+    }//void InitActionPlan()
+
+    // Use data type tuple to create a binary tree: 
+
+
+    public void CreateActionPlanWithBinaryTree( Dictionary< string, List<Action>> actionPlan,
+                Dictionary<string, TimeInterval> actionPlanWithBinaryTree)
+    {
+
+        for (int i = 0; i < actionPlan.Count; i++)
+        {
+            KeyValuePair<string, List<Action>> dictItem = actionPlan.ElementAt(i);
+            string name = dictItem.Key;
+
+            
+            int index = (int) Mathf.Ceil( dictItem.Value.Count / 2.0f ) ;
+
+            int start = 0;
+            int end = dictItem.Value.Count - 1;
+
+            TimeInterval actionBinaryTree = CreateTimedActionBinaryTree(dictItem.Value, start, end, index );
+
+            actionPlanWithBinaryTree.Add(name, actionBinaryTree);
+
+        }
     }
+
+public TimeInterval CreateTimedActionBinaryTree( List<Action> timedAction,
+                                    int start, int end, int index)
+{
+    if (start == end)
+        {
+            return null;
+        }
+
+    TimeInterval node= new TimeInterval();
+   
+    node.interval = ((timedAction[index-1].T[0] + timedAction[index-1].T[1]) / 2,
+                     (timedAction[index].T[0] + timedAction[index].T[1]) / 2);
+    node.actionIndex =  index;
+
+    int leftChildIndex = start + (int)Mathf.Ceil((index -1 - start) / 2.0f);
+    int leftStart = start;
+    int leftEnd = index - 1;
+    TimeInterval leftTree = CreateTimedActionBinaryTree(timedAction, leftStart, leftEnd,
+                             leftChildIndex);
+
+    int rightChildIndex = index + (int)Mathf.Ceil((end -index) / 2.0f);
+    int rightStart = index;
+    int rightEnd = end;
+    TimeInterval rightTree = CreateTimedActionBinaryTree(timedAction, rightStart, rightEnd,
+                             rightChildIndex);
+
+        //node.children[0] = leftTree;
+        //node.children[1] = rightTree;
+      node.children.Add( leftTree );
+      node.children.Add( rightTree );
+
+      return node;
+
+}//CreateTimedActionBinaryTree
+
+public  int searchForActionIndex(TimeInterval node, float timePoint)
+    {
+        if ( node == null)
+        {
+            return -1; // no action index has been found
+        }
+        (float, float) timeInterval = node.interval;
+
+        if ( timePoint >= timeInterval.Item1 && timePoint < timeInterval.Item2 )
+        {
+            return node.actionIndex;
+        }
+
+        else if ( timePoint < timeInterval.Item1)
+        {
+            return searchForActionIndex(node.children[0], timePoint);
+
+        }
+        else //  timePoint >= timeInterval.Item2
+        {
+            return searchForActionIndex(node.children[1], timePoint);
+        }
+
+    }//searchForActionIndex(TimeInterval root, float timePoint)
+
+
+
     GameObject CreateText(Transform canvas_transform, float x, float y, string text_to_print, int font_size, Color text_color)
     {
         GameObject UItextGO = new GameObject("Text2");
@@ -3153,11 +3263,6 @@ void SetupActionPlanUILocAndSize()
 
 }//   void SetupActionPlanUILocAndSize()    
 
-
-void OnDestroy()
-    {
-        stay = false;
-    }
 
     //https://mrbinggrae.tistory.com/86
     //This means that whatever the resolution, the Slider will always be drawn exactly with the same dimensions 

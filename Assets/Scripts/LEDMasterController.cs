@@ -115,7 +115,12 @@ public class LEDMasterController : MonoBehaviour
 
             try
             {
-                m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
+                Debug.Log(" send LED array to arduino");
+                for (int i =0; i < m_LEDArray.Length; i++)
+                {
+                    Debug.Log(i + "th byte:" +m_LEDArray[i]);
+                }
+                //m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }
             catch (Exception ex)
             {
@@ -180,18 +185,18 @@ public class LEDMasterController : MonoBehaviour
             // between the unity script and the arduino master, you need to use another serial port
             // to send data from the master arduino to the serial monitor
 
-           for (int i=0; i < m_LEDCount; i++)
-            {
-                Vector3 color = new Vector3();
+           //for (int i=0; i < m_LEDCount; i++)
+           // {
+           //     Vector3 color = new Vector3();
 
-                color[0] = m_LEDArray[3 * i + 0];
-                color[1] = m_LEDArray[3 * i + 1];
-                color[2] = m_LEDArray[3 * i + 2];
+           //     color[0] = m_LEDArray[3 * i + 0];
+           //     color[1] = m_LEDArray[3 * i + 1];
+           //     color[2] = m_LEDArray[3 * i + 2];
 
-                // yooJin: Uncomment the following for debugging
-                //Debug.Log(" In UpdateLEDArray: Send: " + i +  "th LED color:" + color);
+           //     // yooJin: Uncomment the following for debugging
+           //     //Debug.Log(" In UpdateLEDArray: Send: " + i +  "th LED color:" + color);
 
-            }
+           // }
 
 
         }

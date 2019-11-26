@@ -4,7 +4,7 @@ using UnityEngine;
 [Serializable]
 public struct BoidSetting
 {
-    [Range(0.0f, 5.0f)]
+    [Range(0.0f, 10.0f)]
     public float Radius;
     [Range(0.0f, 1.0f)]
     public float Weight;

@@ -105,7 +105,7 @@ RWStructuredBuffer<float4> _BoidLEDRenderDebugBuffer0;
 
 float _SamplingRadius;
 
-float _HeimisphereGroundPosition;
+int  _Hemisphere;
 
 
 float _MaxDomainRadius; // 10
@@ -168,10 +168,10 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 		// projected onto the plane y = _HeimisphereGroundPosition
 
 
-		if (_HeimisphereGroundPosition >= 0)
+		if (_Hemisphere == 1)
 		{
-			if (!(nBoid.position.y >= _HeimisphereGroundPosition))
-			{//  The boid is not in the hemisphere that is intended by the hemisphere reference position
+			if ( nBoid.position.y < 0)
+			{//  The boid is not in the upper hemisphere 
 			 //  ignore the boid
 				continue;
 			}
@@ -240,15 +240,15 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 
 				}// if (dist <= _SamplingRadius)
 
-			}
+			} // esle of  nBoid.position.y < 0
 
-		}//if (_HeimisphereGroundPosition >= 0)
+		}//if (_Hemisphere ==1)
 
-		else //(_HeimisphereGroundPosition < 0)
+		else // _Hemisphere == 0; lower hemisphere
 		{ 
-			if ( !(nBoid.position.y < _HeimisphereGroundPosition) )
+			if ( nBoid.position.y > 0 )
 
-			{//  The boid is not in the hemisphere that is intended by the hemisphere reference position
+			{//  The boid is not in the  lower hemisphere 
 			 //  ignore the boid
 			 continue;  // go to the next boid
 
@@ -317,8 +317,8 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 
 				}// if (dist <= _SamplingRadius)
 
-			}
-		} // else  //(_HeimisphereGroundPosition < 0)
+			}// else  of if ( nBoid.position.y > 0 )
+		} // else of _Hemisphere == 1
 
 		  
 
@@ -338,8 +338,8 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 
 		/*_BoidLEDBuffer[pId].position = _BoidBuffer[minIndex].position;
 		_BoidLEDBuffer[pId].headDir = _BoidBuffer[minIndex].headDir;*/
-		//_BoidLEDBuffer[pId].color = _BoidBuffer[minIndex].color;
-		_BoidLEDBuffer[pId].color = colorSum / (float)neighborCnt;
+		_BoidLEDBuffer[pId].color = _BoidBuffer[minIndex].color;
+		//_BoidLEDBuffer[pId].color = colorSum / (float)neighborCnt;
 
 		//_BoidLEDBuffer[pId].color = colorSum / weightSum;
 

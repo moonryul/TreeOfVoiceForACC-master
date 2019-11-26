@@ -2,23 +2,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
- 
-
+using UnityEngine.Rendering;
+using System.IO;
+using System;
+using System.Runtime.InteropServices;
 public class BoidRendererTreeOfVoice : MonoBehaviour
 {
+    bool m_fileClosed = false;
+    // Cameras for DrwaMeshInstanced()
 
-    // ComputeBuffer: GPU data buffer, mostly for use with compute shaders.
-    // you can create & fill them from script code, and use them in compute shaders or regular shaders.
+    Camera m_MainCamera, m_CameraToGround, m_CameraToCeiling, m_CameraToFrontWall;
 
+    //http://blog.deferredreality.com/write-to-custom-data-buffers-from-shaders/
+    //The register(u2) represents which internal gpu registrar to bind the data structure to.
+    //You need to specify the same in C#, and keep in mind this is global on the GPU.
+    ComputeBuffer m_MatrixBuffer;
+    int m_numOfShaderMatrices = 3; // 
+    //
+    // ComputeBuffer(int count, int stride, ComputeBufferType type);
+    // 
+    Matrix4x4[] m_MatrixArray; // arrays should be blittable. An 1d array of floats
 
-     // Declare other Component _boids; you can drag any gameobject that has that Component attached to it.
-     // This will acess the Component directly rather than the gameobject itself.
-
-
+    
     SimpleBoidsTreeOfVoice m_boids; // _boids.BoidBuffer is a ComputeBuffer
   
-
-
+    
     [SerializeField] Material m_boidInstanceMaterial;
 
  
@@ -43,18 +51,20 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
     [SerializeField]  Mesh m_instanceMeshSphere;
 
-    public bool m_useCircleMesh = true;
-   
+    public bool m_useCircleMesh = false;
+    public bool m_useSphereMesh = true;
+    public bool m_useCylinderMesh = false;
+
     //[SerializeField]  Mesh _instanceMeshHuman1;
     //[SerializeField]  Mesh _instanceMeshHuman2;
     //[SerializeField]  Mesh _instanceMeshHuman3;
     //[SerializeField]  Mesh _instanceMeshHuman4;
 
-   // public MeshSetting _meshSetting = new MeshSetting(1.0f, 1.0f);
+    // public MeshSetting _meshSetting = new MeshSetting(1.0f, 1.0f);
 
-   // int _meshNo; // set from SimpleBoids (used to be)
+    // int _meshNo; // set from SimpleBoids (used to be)
 
-    Mesh m_boidInstanceMesh;
+    public Mesh m_boidInstanceMesh;
     public float m_scale = 1.0f; // the scale of the instance mesh
 
     //private ComputeBuffer colorBuffer;
@@ -87,9 +97,86 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
     //// Create Vector2 vertices
     float unitRadius = 1f; // radius = 1m
 
+    StreamWriter  m_writer;
+    FileStream m_oStream;
 
     private void Awake()
     { // initialize me
+        m_fileClosed = false;
+
+        // DEBUG code
+        string fileName = "SimpleBoidRender";
+        string fileIndex = System.DateTime.Now.ToString("yyyyMMddHHmmss");
+        fileIndex.Replace(" ", string.Empty);
+        //fileIndex = string.Join("",
+        //      fileIndex.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
+        string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
+
+        File.CreateText(path).Dispose();
+        //Write some text to the test.txt file
+        m_writer = new StreamWriter(path, false); // do not append
+        //m_ioStream = new FileStream(path,
+        //                               FileMode.OpenOrCreate,
+        //                               FileAccess.ReadWrite,
+        //                               FileShare.None);
+
+     
+        //m_oStream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.None);
+        //m_writer = new System.IO.StreamWriter(m_oStream);
+
+
+        //var oStream = new FileStream(test, FileMode.Append, FileAccess.Write, FileShare.Read);
+        //var iStream = new FileStream(test, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        // Find the cameras for DrawMeshIntanced()
+
+        m_MainCamera  = GameObject.FindWithTag("MainCamera").GetComponent<Camera>();
+
+        m_CameraToGround = GameObject.FindWithTag("CameraToGround").GetComponent<Camera>();
+        m_CameraToCeiling = GameObject.FindWithTag("CameraToCeiling").GetComponent<Camera>();
+        m_CameraToFrontWall = GameObject.FindWithTag("CameraToFrontWall").GetComponent<Camera>();
+       
+        if ( m_MainCamera ==null)
+        {
+            Debug.LogError("The main Camera is not defined");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif  
+        }
+
+        if (m_CameraToGround == null)
+        {
+            Debug.LogError("The CameraToGround is not defined");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif  
+        }
+        if (m_CameraToCeiling == null)
+        {
+            Debug.LogError("The CameraToCeiling is not defined");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif  
+        }
+        if (m_CameraToFrontWall == null)
+        {
+            Debug.LogError("The CameraToFrontWall is not defined");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif  
+        }
+
 
 
         // check if the global component object is defined
@@ -97,12 +184,17 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         {
             Debug.LogError("The global Variable _boidInstanceMaterial is not  defined in Inspector");
             // EditorApplication.Exit(0);
-            return;
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif   
         }
 
-        m_instanceMeshCircle = new CircleMesh(unitRadius);               
+                     
 
-        m_instanceMeshCylinder =new CylinderMesh(height, radius, nbSides, nbHeightSeg);
+      
 
         m_boidArgsBuffer = new ComputeBuffer(
             1, // count
@@ -115,46 +207,145 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
         if (m_useCircleMesh) // use 2D boids => creat the mesh in a script
         {
+            m_instanceMeshCircle = new CircleMesh(unitRadius);
 
             m_boidInstanceMesh = m_instanceMeshCircle.m_mesh;
 
+
+            //for (int i = 0; i < m_boidInstanceMesh.vertexCount; i++)
+            //{
+
+            //    //     The normals of the Mesh.
+            //    //  public Vector3[] normals { get; set; }
+            //    m_boidInstanceMesh.normals[i] *= -1; // reverse the direction of the normal for 2D circle mesh
+
+            //}
+
         }
+
+        else if (m_useSphereMesh) 
+        {
+            // Use the sphere mesh
+            if (m_instanceMeshSphere == null)
+            {
+
+                Debug.LogError("_instanceMeshSphere is not  defined in Inspector");
+                // EditorApplication.Exit(0);
+#if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif   
+            }
+            else
+            {
+                m_boidInstanceMesh = m_instanceMeshSphere;
+                m_boidInstanceMesh.RecalculateNormals();
+//                Normals are calculated from all shared vertices.
+
+//                 Meshes sometimes don't share all vertices. For example,
+//                 a vertex at a UV seam is split into two vertices, so the RecalculateNormals function creates 
+//                 normals that are not smooth at the UV seam.
+            }
+
+
+        }
+
+        else if (m_useCylinderMesh)
+        {
+           
+                m_instanceMeshCylinder = new CylinderMesh(height, radius, nbSides, nbHeightSeg);
+
+                if (m_instanceMeshCylinder == null)
+                {
+                    Debug.LogError("_instanceCylinderSphere is not created well");
+                // EditorApplication.Exit(0);
+#if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif   
+                }
+                else
+                {
+                  m_boidInstanceMesh = m_instanceMeshCylinder.m_mesh;
+                  //m_boidInstanceMesh.RecalculateNormals();
+                //                Normals are calculated from all shared vertices.
+
+                //                 Meshes sometimes don't share all vertices. For example,
+                //                 a vertex at a UV seam is split into two vertices, so the RecalculateNormals function creates 
+                //                 normals that are not smooth at the UV seam.
+            }
+
+
+        }//if (m_useCylinderMesh)
+
 
         else
         {
-            m_boidInstanceMesh = m_instanceMeshCylinder.m_mesh;
+            Debug.LogError("useCircleMesh or useSphereMesh or useCylinderMesh should be checked");
+            //If we are running in a standalone build of the game
+#if UNITY_STANDALONE
+            //Quit the application
+            Application.Quit();
+#endif
 
+            //If we are running in the editor
+#if UNITY_EDITOR
+            //Stop playing the scene
+            // UnityEditor.EditorApplication.isPlaying = false;
+            //Setting isPlaying delays the result until after all script code has completed for this frame.
 
+            EditorApplication.Exit(0);
+#endif
         }
-        //  else {
-        //            Debug.LogError("useCircleMesh or useSphereMesh should be checked");
-        //            //If we are running in a standalone build of the game
-        //            #if UNITY_STANDALONE
-        //            //Quit the application
-        //            Application.Quit();
-        //            #endif
-
-        //            //If we are running in the editor
-        //            #if UNITY_EDITOR
-        //            //Stop playing the scene
-        //            // UnityEditor.EditorApplication.isPlaying = false;
-        //            //Setting isPlaying delays the result until after all script code has completed for this frame.
-
-        //            EditorApplication.Exit(0);
-        //            #endif
-        //        }
 
 
 
         //Debug.Log("number of indices=");
         //Debug.Log(_instanceMesh.GetIndexCount(0));
 
-        
 
     }
     void Start () 
 	{   // initialize others
 
+
+
+        //_MatrixBuffer[0] = UNITY_MATRIX_M;
+        //_MatrixBuffer[1] = UNITY_MATRIX_V;
+        //_MatrixBuffer[2] = UNITY_MATRIX_P;
+
+
+        //ComputeBufferType.Default: In HLSL shaders, this maps to StructuredBuffer<T> or RWStructuredBuffer<T>.
+        m_MatrixBuffer = new ComputeBuffer(m_numOfShaderMatrices,
+                                           Marshal.SizeOf(typeof(Matrix4x4)), 
+                                            ComputeBufferType.Default);
+
+        ////(4*4) * sizeof(float) == Marshal.SizeOf(typeof(Matrix4x4))
+        ///
+        // Set the ComputeBuffer for shader debugging
+        // But a RWStructuredBuffer, requires SetRandomWriteTarget to work at all in a non-compute-shader. 
+        //This is all Unity API magic which in some ways is convenient 
+
+        // for debugging
+       // Graphics.SetRandomWriteTarget(1, m_MatrixBuffer);
+        
+        //SetRandomWriteTarget(int index, ComputeBuffer uav, bool preserveCounterValue = false);
+        // The "1" represents the target index ie u1.
+        // Uses "unordered access views" (UAV) in UsingDX11GL3Features. 
+        // These "random write" targets are set similarly to how multiple render targets are set.
+       
+
+
+        m_MatrixArray = new Matrix4x4[m_numOfShaderMatrices];
+
+
+        m_MatrixBuffer.SetData(m_MatrixArray);
+       
+        
         // get the reference to SimpleBoidsTreeOfVoice
 
         m_boids = this.gameObject.GetComponent<SimpleBoidsTreeOfVoice>();
@@ -165,8 +356,12 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
             Debug.LogError("SimpleBoidsTreeOfVoice component should be attached to CommHub");
             //EditorApplication.Exit(0);
             // Application.Quit();
-            return;
-            
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+                   Application.Quit();
+# endif            
         }
                 
 
@@ -219,9 +414,12 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
         //m_boidInstanceMaterial.SetVector("CeilingMaxCorner", m_boids.CeilingMaxCorner);
         //m_boidInstanceMaterial.SetVector("CeilingMinCorner", m_boids.CeilingMinCorner);
 
-        m_boidInstanceMaterial.SetBuffer("_BoidBuffer", m_boids.m_BoidBuffer); 
+        m_boidInstanceMaterial.SetBuffer("_BoidBuffer", m_boids.m_BoidBuffer);
         // m_boids.BoidBuffer is ceated in SimpleBoids.cs
         // This buffer is shared between CPU and GPU
+
+        // for debugging
+        //m_boidInstanceMaterial.SetBuffer("_MatrxiBuffer", m_MatrixBuffer);
 
 
 
@@ -245,18 +443,197 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
     }
 
-	private void RenderInstancedMesh()
+  
+    private void RenderInstancedMesh()
 
 	{
-        //"_BoidBuffer" is changed by SimpleBoidsTreeOfVoice
-        // for debugging, comment out
+
+
         Graphics.DrawMeshInstancedIndirect(
-            m_boidInstanceMesh,
+             m_boidInstanceMesh, // a mesh to be drawn
             0,
-            m_boidInstanceMaterial, // This material defines the shader which receives instanceID
+            m_boidInstanceMaterial, // This material defines the parameters and buffers passed to the shader
+
             new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
-            m_boidArgsBuffer // this contains the information about the instances: see below
+            m_boidArgsBuffer // this contains the number of instances and index coung per instance
         );
+
+
+        //   public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex,
+        //Material material, Bounds bounds, ComputeBuffer bufferWithArgs, 
+        //int argsOffset, MaterialPropertyBlock properties,
+        //       ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera);
+
+        //It allows drawing from a compute buffer that has draw parameters stored
+        //    (instance counts, vert counts), and in your shader you can setup 
+        //    per-instance data from a computer buffer(instead of using constant buffers,
+        //    as regular GPU instancing does now).
+
+        //At the current stage, you would need to assign a "instance index" as instanced property
+        //    to all instances, and use this property to access to a compute buffer.
+        //    .
+
+        //int layer = 0; // Default layer
+
+        //Graphics.DrawMeshInstancedIndirect(
+        //    m_boidInstanceMesh,
+        //    0,
+        //    m_boidInstanceMaterial, // This material defines the shader which receives instanceID
+        //    new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+        //    m_boidArgsBuffer, // this contains the information about the instances: see below
+        //    0, null, ShadowCastingMode.Off, false, layer, null // m_MainCamera
+        //    );
+
+        // Asynchronous GetData:
+        // https://github.com/SlightlyMad/AsyncTextureReader
+        //https://forum.unity.com/threads/asynchronously-getting-data-from-the-gpu-directx-11-with-rendertexture-or-computebuffer.281346/
+
+        //I don't see a way around this personally, you might reduce it via a native plugin 
+        //but that is a lot of work for ~5fps unless you REALLY need it.
+
+        // The slowdown of GetData() is due to a pipeline stall. CPU execution blocks on the GetData() call, 
+        //flushes all pending commands to the GPU, waits for the GPU to flush its own pipeline,
+        //and then finally initiates the transfer. The transfer itself is fairly quick 
+        //- it's all the pipeline cleanup/flushing that must take place beforehand.
+
+        //        The general way to hide this latency is through asynchronous transfers,
+        //        where the CPU doesn't block on the call, thus allowing the GPU to perform the transfer
+        //            at a point 
+        //            which is convenient for it to do so. This eliminates the lag felt from the stall, but
+        //            data will be several frames old when received (although that usually doesn't matter).
+
+        //You can do this easily in OpenGL, not sure about D3D(although I'd be very surprised if you can't).
+        //        Problem is that it's fairly low-level and Unity doesn't expose this functionality
+        //            (yet, hopefully).
+
+        //        I'm reading up on that very thing as we speak:
+
+        //http://docs.unity3d.com/Manual/NativePlugins.html
+        //        and
+        //        http://docs.unity3d.com/Manual/NativePluginInterface.html
+
+        //I think I can do this, but need a way to access a ComputeBuffer's native handle. 
+        //            You can do so with Textures (Texture.GetNativeTexturePtr), but I don't currently 
+        //            see an easy way to do so with ComputeBuffers.Will update if I find anything further.
+
+        //        2016, ReadPixels continues to stall the GPU without an alternative.
+
+        //A native plugin is still the only way around it(confirmed by unity support)
+
+        //Just FYI, if anyone finds this thread looking for a solution. 
+        MyIO.DebugLog("Shader Matrices Debug");
+        //int numOfShaderMatrices = 3; // 
+
+        //_MatrixBuffer[0] = UNITY_MATRIX_M;
+        //_MatrixBuffer[1] = UNITY_MATRIX_V;
+        //_MatrixBuffer[2] = UNITY_MATRIX_P;
+
+        // for debugging
+        //if (!m_fileClosed)
+        //{
+        //    // get the matrix array from the compute buffer associated with m_boidInstanceMaterial
+        //    // of DrawMeshInstancedIndirect()
+        //    m_MatrixBuffer.GetData(m_MatrixArray);
+
+        //    m_writer.WriteLine("main Camera: \n");
+
+        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+
+        //    {
+        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+
+        //    }
+
+        //}
+
+        //Graphics.DrawMeshInstancedIndirect(
+        //    m_boidInstanceMesh,
+        //    0,
+        //    m_boidInstanceMaterial, // This material defines the shader which receives instanceID
+        //    new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+        //    m_boidArgsBuffer, // this contains the information about the instances: see below
+        //    0, null, ShadowCastingMode.Off, false, layer, m_CameraToGround
+        //    );
+
+     
+
+
+        //if (!m_fileClosed)
+        //{
+        //    m_MatrixBuffer.GetData(m_MatrixArray);
+        //    m_writer.WriteLine("cameraToGround: \n");
+
+        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+
+        //    {
+        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+
+        //    }
+        //}
+
+
+
+
+
+        //Graphics.DrawMeshInstancedIndirect(
+        //   m_boidInstanceMesh,
+        //   0,
+        //   m_boidInstanceMaterial, // This material defines the shader which receives instanceID
+        //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+        //   m_boidArgsBuffer, // this contains the information about the instances: see below
+        //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToCeiling
+        //   );
+
+       
+
+        //if (!m_fileClosed)
+        //{
+        //    m_MatrixBuffer.GetData(m_MatrixArray);
+        //    m_writer.WriteLine("CameraToCeiling: \n");
+
+        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+
+        //    {
+        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+
+        //    }
+        //}
+
+
+
+
+        //Graphics.DrawMeshInstancedIndirect(
+        //   m_boidInstanceMesh,
+        //   0,
+        //   m_boidInstanceMaterial, // This material defines the shader which receives instanceID
+        //   new Bounds(m_boids.RoomCenter, m_boids.RoomSize),
+        //   m_boidArgsBuffer, // this contains the information about the instances: see below
+        //   0, null, ShadowCastingMode.Off, false, layer, m_CameraToFrontWall
+        //   );
+
+       
+
+        //if (!m_fileClosed)
+        //{
+        //    m_MatrixBuffer.GetData(m_MatrixArray);
+        //    m_writer.WriteLine("CameraToFrontWall: \n");
+
+        //    for (int i = 0; i < m_numOfShaderMatrices; i++)
+
+        //    {
+        //        m_writer.WriteLine(i + "th matrix+\n" + m_MatrixArray[i]);
+
+        //    }
+
+        //}
+
+        if (!m_fileClosed)
+        {
+            m_writer.Close();
+           
+            m_fileClosed = true;
+        }
+
 
         // _boidArgs = 
         ////                     인스턴스 당 인덱스 수    (Index count per instance)
@@ -276,17 +653,5 @@ public class BoidRendererTreeOfVoice : MonoBehaviour
 
 
     }//private void RenderInstancedMesh()
-
-    //  public struct BoidData
-    //  {
-    //     public Vector2 Position; // the position of a boid center; float x and float y
-    //     public Vector2 Scale; // the scale factors of x and z directions
-    //     public float Angle; // the head angle of a boid: from 0 to 2 *PI
-    //     public float Speed;            // the speed of a boid
-    //     public Vector4 Color;         // RGBA color
-    //     public Vector2 SoundGrain; // soundGrain = (freq, amp)
-    //      public float Duration;     // duration of a boid each frame
-    //      public int  WallNo;      // indicates whether the boid is on ground or on ceiling
-    //   }
 
 }
