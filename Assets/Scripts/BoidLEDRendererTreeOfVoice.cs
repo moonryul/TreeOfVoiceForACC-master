@@ -468,7 +468,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
         //A native plugin is still the only way around it(confirmed by unity support)
 
         //Just FYI, if anyone finds this thread looking for a solution. 
-        MyIO.DebugLog("Shader Matrices Debug");
+       // MyIO.DebugLog("Shader Matrices Debug");
         //int numOfShaderMatrices = 3; // 
 
         //_MatrixBuffer[0] = UNITY_MATRIX_M;

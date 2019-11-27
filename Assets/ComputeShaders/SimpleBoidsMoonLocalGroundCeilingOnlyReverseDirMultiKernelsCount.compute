@@ -391,105 +391,105 @@ float3 hslToHsv(float H, float S, float L)
 //			Math.round(255 * (rgb1[2] + m))];
 //}
 //
-//float3 HSVtoRGB(float fH, float fS, float fV)
-//{
-//    float fR, fG, fB;
-//	
-//	float fHdeg = fH * 360;
-//
-//	float fC = fV * fS; // Chroma
-//
-//	float fHPrime = fmod(fHdeg / 60.0, 6);
-//
-//	float fX = fC * (1 - abs(fmod(fHPrime, 2) - 1));
-//
-//	float fM = fV - fC;
-//
-//
-//
-//	if (0 <= fHPrime && fHPrime < 1) 
-//	{
-//
-//		fR = fC;
-//
-//		fG = fX;
-//
-//		fB = 0;
-//
-//	}
-//	else 
-//		if (1 <= fHPrime && fHPrime < 2) 
-//		{
-//
-//		fR = fX;
-//
-//		fG = fC;
-//
-//		fB = 0;
-//
-//	    }
-//	else 
-//		if (2 <= fHPrime && fHPrime < 3)
-//		{
-//
-//		fR = 0;
-//
-//		fG = fC;
-//
-//		fB = fX;
-//
-//	    }
-//	else if (3 <= fHPrime && fHPrime < 4) 
-//	{
-//
-//		fR = 0;
-//
-//		fG = fX;
-//
-//		fB = fC;
-//
-//	}
-//	else if (4 <= fHPrime && fHPrime < 5) 
-//	{
-//
-//		fR = fX;
-//
-//		fG = 0;
-//
-//		fB = fC;
-//
-//	}
-//	else if (5 <= fHPrime && fHPrime < 6) 
-//	{
-//
-//		fR = fC;
-//
-//		fG = 0;
-//
-//		fB = fX;
-//
-//	}
-//	else {
-//
-//		fR = 0;
-//
-//		fG = 0;
-//
-//		fB = 0;
-//
-//	}
-//
-//
-//
-//	fR += fM;
-//
-//	fG += fM;
-//
-//	fB += fM;
-//
-//	return  float3(fR, fG, fB);
-//
-//} // HSVtorgb
+float3 HSVToRGB(float fH, float fS, float fV)
+{
+    float fR, fG, fB;
+	
+	float fHdeg = fH * 360;
+
+	float fC = fV * fS; // Chroma
+
+	float fHPrime = fmod(fHdeg / 60.0, 6);
+
+	float fX = fC * (1 - abs(fmod(fHPrime, 2) - 1));
+
+	float fM = fV - fC;
+
+
+
+	if (0 <= fHPrime && fHPrime < 1) 
+	{
+
+		fR = fC;
+
+		fG = fX;
+
+		fB = 0;
+
+	}
+	else 
+		if (1 <= fHPrime && fHPrime < 2) 
+		{
+
+		fR = fX;
+
+		fG = fC;
+
+		fB = 0;
+
+	    }
+	else 
+		if (2 <= fHPrime && fHPrime < 3)
+		{
+
+		fR = 0;
+
+		fG = fC;
+
+		fB = fX;
+
+	    }
+	else if (3 <= fHPrime && fHPrime < 4) 
+	{
+
+		fR = 0;
+
+		fG = fX;
+
+		fB = fC;
+
+	}
+	else if (4 <= fHPrime && fHPrime < 5) 
+	{
+
+		fR = fX;
+
+		fG = 0;
+
+		fB = fC;
+
+	}
+	else if (5 <= fHPrime && fHPrime < 6) 
+	{
+
+		fR = fC;
+
+		fG = 0;
+
+		fB = fX;
+
+	}
+	else {
+
+		fR = 0;
+
+		fG = 0;
+
+		fB = 0;
+
+	}
+
+
+
+	fR += fM;
+
+	fG += fM;
+
+	fB += fM;
+
+	return  float3(fR, fG, fB);
+
+} // HSVtorgb
 
 
 
@@ -506,7 +506,7 @@ float3 hslToHsv(float H, float S, float L)
 void computeBoidColor(inout Boid pBoid) 
 {
 
-	float h, hDeg, s, l,  alpha;
+	float h, hDeg, s, v,  alpha;
 	
 	float angDeg;
 
@@ -586,17 +586,21 @@ void computeBoidColor(inout Boid pBoid)
 				(boidHorizontalRadius - _MaxDomainRadius);
 
 
-		
+		/*
 			l = _GroundMinValue + (_GroundMaxValue - _GroundMinValue) /
-				( _MaxDomainRadius - 0.0 ) * (_MaxDomainRadius - boidVerticalRadius );
+				( _MaxDomainRadius - 0.0 ) * (_MaxDomainRadius - boidVerticalRadius );*/
+
+
+			v = _GroundMinValue + (_GroundMaxValue - _GroundMinValue) /
+				(_MaxDomainRadius - 0.0) * (boidVerticalRadius - 0.0f);
 
 			alpha = 1;					   		
 
 		// debug
 			//float s = 0.5;
 			//float l = 0.5;
-			pBoid.color = float4(hslToRgb(hDeg / 360, s, l), alpha);
-
+			//pBoid.color = float4(hslToRgb(hDeg / 360, s, l), alpha);
+			pBoid.color = float4( HSVToRGB(hDeg/360, s, v), alpha);
 			// debug
 			//pBoid.color = float4(0,0,0,1);
 			//pBoid.color = float4(_GroundMinHue, _GroundMaxHue, _GroundMinValue, _GroundMaxValue);
@@ -604,7 +608,7 @@ void computeBoidColor(inout Boid pBoid)
 			//pBoid.color = float4(hslToRgb2(hDeg, s, l), alpha);
 			//float3 hsv = float3( atan2(pBoid.position.z, pBoid.position.x), angDeg,hDeg );
 
-			float3 hsv = hslToHsv(hDeg, s, l);
+			float3 hsv = float3(hDeg/360, s, v);
 			pBoid.colorHSV = hsv;
 					
 			return;
@@ -689,7 +693,7 @@ void computeBoidColor(inout Boid pBoid)
 
 
 		// _GroundRadius is used as _HeightRadius because we have a sphere here
-		l = _CeilingMinValue + (_CeilingMaxValue - _CeilingMinValue) /
+		v = _CeilingMinValue + (_CeilingMaxValue - _CeilingMinValue) /
 			(_MaxDomainRadius - 0.0f) * (boidVerticalRadius - 0.0f);
 
 
@@ -722,14 +726,14 @@ void computeBoidColor(inout Boid pBoid)
 		// debug
 		//float s = 0.5;
 		//float l = 0.5;
-		float3 hsv = hslToHsv(hDeg, s, l);
+		float3 hsv = float3(hDeg/360, s, v);
 
 		//float3 hsv = hslToHsv(angDeg, hDeg, atan2(pBoid.position.z, pBoid.position.x));
 		//float3 hsv = float3(atan2(pBoid.position.z, pBoid.position.x), angDeg, hDeg );
 		pBoid.colorHSV = hsv;
 		
 
-		pBoid.color = float4( hslToRgb(hDeg/360, s, l), alpha);
+		pBoid.color = float4( HSVToRGB( hDeg/360, s, v), alpha);
 
 
 		//pBoid.color = float4(_CeilingMinHue, _CeilingMaxHue, _CeilingMinValue, _CeilingMaxValue);

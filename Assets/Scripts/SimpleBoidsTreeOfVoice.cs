@@ -1169,7 +1169,7 @@ protected void Simulate() // called from Update()
                     //    m_writer.WriteLine("Boid (_minHue,_maxHue,_minValue,_maxValue) in shader= " + m_boidArray[i].Color);
 
 
-                    // Color color = Color.HSVToRGB(m_boidArray[i].ColorHSV.x / 360,
+                    // Color color = Color.HSVToRGB(m_boidArray[i].ColorHSV.x,
                     //                   m_boidArray[i].ColorHSV.y, m_boidArray[i].ColorHSV.z);
 
 

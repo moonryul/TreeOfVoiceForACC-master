@@ -121,6 +121,20 @@ int _NumOfWalls;
 
 
 
+float findPhiAngleForVector(float3 vec)
+{
+
+	// get the ground projection of vec along y axis
+	float theta = atan2(vec.z, vec.x); // theta ranges (0,pi) or (0 -pi)
+
+	if (theta < 0) { // negative theta means that vec (x,y) is in 3rd or 4th quadrant, measuring in the clockwise direction
+		return (2 * M_PI + theta); // angle measured in the counterclockwise direction
+	}
+	else {
+		return theta;
+	}
+
+}
 
   // Use a single boid buffer for the ceiling and the ground, 
   // but use a flag to indicate whether the boid is on the ground or on the ceiling
@@ -156,241 +170,66 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 		
 	int minIndex = -1;
 
-	
+	// Get the boid whose radius from the y axis is "equal" to the radius of pLEDBoid
+	// Sample the color of that boid as the color of pLEDBoid
+	float3 LEDBoidPosFromYAxis = float3(pBoidLED.position.x, 0.0, pBoidLED.position.z);
+	float LEDBoidRadiusFromYAxis = length(LEDBoidPosFromYAxis);
+
+	//  compute the cylinderic coordinate of nBoid to sample to get the color of pBoidLED
+
+   // get the y (height) of nBoid whose color to sample as the color of pBoidLED
+	// y^2 + LEDBoidRadiusFromYAxis = _MaxDomainRadius^2
+
+	float yCoord = sqrt(_MaxDomainRadius * _MaxDomainRadius - LEDBoidRadiusFromYAxis * LEDBoidRadiusFromYAxis);
+
+	// get the phi coordinate;
+
+	float phi = findPhiAngleForVector(pBoidLED.position);
+	float xCoord = LEDBoidRadiusFromYAxis * cos(phi);
+	float zCoord = LEDBoidRadiusFromYAxis * sin(phi);
+	float3 BoidPosToSample = float3(xCoord, yCoord, zCoord);
+
+
 	//float3 posInCeiling =  pBoidLED.position;
 	for (int nId = 0; nId < _BoidsNum; nId++)
 	{
-
-		//if (nId == pId) continue; // go to the next iteration
-
 		Boid nBoid = _BoidBuffer[nId];
 
-		// Get the hemisphere from which to sample LED colors.
-		// Consider the neighbor  boids which are down
-		// projected onto the plane y = _HeimisphereGroundPosition
+		if (nBoid.position.y < pBoidLED.position.y) continue;
+		// check if the boid nBoid is a neighbor of BoidPosToSample  
+		// within the sampling radius
+		diffVec = nBoid.position - BoidPosToSample;
 
-		// Sample boids in the "hemisphere" above or below the given "_Hemisphere"
-		// which is the height or depth of the "bottom" of the "hemisphere"
+		dist = length(diffVec);
 
-		if (_Hemisphere >= 0)
-		{ // sample boids in the hemisphere above _Hemisphere
-
-		
-			if ( nBoid.position.y < _Hemisphere)
-			{//  The boid is not in the desired  hemisphere 
-			 //  ignore the boid
-				continue;
+		if (dist <= _SamplingRadius)
+		{
+			if (dist < minDist)
+			{
+				minDist = dist;
+				minIndex = nId;
 			}
 
-			else
-			{
-				// Project the boid on the plane defined by _Heimisphere 
-				// This projection is achieved by ignoring the y coordinate of the boids.
+			neighborCnt++;
 
+		}// if (dist <= _SamplingRadius)
+	} // for
 
-		   // minChainRadius: maxChainRadius => minDomainRadius: maxDomainRadius
-				float3 LEDBoidPosFromYAxis = float3(pBoidLED.position.x, 0.0, pBoidLED.position.z);
-				float LEDBoidRadiusFromYAxis = length(LEDBoidPosFromYAxis);
-
-				if (LEDBoidRadiusFromYAxis < _MinChainRadius) {
-					LEDBoidRadiusFromYAxis = _MinChainRadius;
-				}
-
-				if (LEDBoidRadiusFromYAxis > _MaxChainRadius) {
-					LEDBoidRadiusFromYAxis = _MaxChainRadius;
-				}
-
-				float radiusOfSampledBoidLEDFromYAxis = _MinDomainRadius +
-					(_MaxDomainRadius - _MinDomainRadius) / (_MaxChainRadius - _MinChainRadius)
-					* (LEDBoidRadiusFromYAxis - _MinChainRadius);
-
-				// Get the boid corresponding to LED boid
-
-				//float3 newpBoidLEDPos = radiusOfBoidForpLEDBoid * pBoidLED.headDir;
-
-				//diffVec = nBoid.position - newLEDBoidPos;
-
-				dist = abs( length(float3(nBoid.position.x, 0, nBoid.position.z)) 
-					        - radiusOfSampledBoidLEDFromYAxis );
-
-
-				// check if the boid nBoid is a neighbor of the current boid pBoid 
-				// within the sampling radius
-
-				if (dist <= _SamplingRadius)
-
-				{
-					if (dist < minDist)
-					{
-						minDist = dist;
-						minIndex = nId;
-					}
-
-
-					weight = smoothstep(0.0, _SamplingRadius, dist); // smoothstep(x, a,b) clamps x between  a and b?
-					//												 //x is clamped to the range [min,
-					//												 //max] and then the interpolation formula is evaluated :
-					//												 //-2 * ((x - min) / (max - min))3 + 3 * ((x - min) / (max - min))2
-
-					if (weight < epsilon)
-					{
-						weight = epsilon; // avoid too small a number for division
-					}
-
-					//colorSum +=  (1 / weight) * nBoid.color ; // sum  diffVec's to compute the average sepration vector
-
-					colorSum += nBoid.color;
-
-					//weightSum += (1 / weight);
-
-					neighborCnt++;          // increament the separation neighor count
-
-				}// if (dist <= _SamplingRadius)
-
-			} // esle of  nBoid.position.y < 0
-
-		}//if (_Hemisphere >=0)
-
-		else // (_Hemisphere < 0)
-		{ 
-			if ( nBoid.position.y > _Hemisphere )
-
-			{//  The boid is not in the desired hemisphere 
-			 //  ignore the boid
-			 continue;  // go to the next boid
-
-			}
-			else
-			{
-				// Project the boid on the plane defined by _HeimisphereGroundPosition from which 
-		 //  the boids which contribute the color to pBoidLED.
-		// This projection is achieved by ignoring the y coordinate of the boids.
-
-
-		   // minChainRadius: maxChainRadius => minDomainRadius: maxDomainRadius
-				float3 LEDBoidPosFromYAxis = float3(pBoidLED.position.x, 0.0, pBoidLED.position.z);
-				float LEDBoidRadius = length(LEDBoidPosFromYAxis);
-
-				if (LEDBoidRadius < _MinChainRadius) {
-					LEDBoidRadius = _MinChainRadius;
-				}
-
-				if (LEDBoidRadius > _MaxChainRadius) {
-					LEDBoidRadius = _MaxChainRadius;
-				}
-
-				float radiusForpBoidLED = _MinDomainRadius +
-					(_MaxDomainRadius - _MinDomainRadius) / (_MaxChainRadius - _MinChainRadius)
-					* (LEDBoidRadius - _MinChainRadius);
-
-				// get the boid corresponding to LED boid
-
-				//float3 newpBoidLEDPos = radiusOfBoidForpLEDBoid * pBoidLED.headDir;
-
-				//diffVec = nBoid.position - newLEDBoidPos;
-
-				dist = abs(length(float3(nBoid.position.x, 0, nBoid.position.z)) - radiusForpBoidLED);
-
-
-				// check if the boid nBoid is a neighbor of the current boid pBoid within the
-				// sampling radius
-
-				if (dist <= _SamplingRadius)
-
-				{
-					if (dist < minDist)
-					{
-						minDist = dist;
-						minIndex = nId;
-					}
-
-
-					weight = smoothstep(0.0, _SamplingRadius, dist); // smoothstep(x, a,b) clamps x between  a and b?
-					//												 //x is clamped to the range [min,
-					//												 //max] and then the interpolation formula is evaluated :
-					//												 //-2 * ((x - min) / (max - min))3 + 3 * ((x - min) / (max - min))2
-
-					if (weight < epsilon)
-					{
-						weight = epsilon; // avoid too small a number for division
-					}
-
-					//colorSum +=  (1 / weight) * nBoid.color ; // sum  diffVec's to compute the average sepration vector
-
-					colorSum += nBoid.color;
-
-					//weightSum += (1 / weight);
-
-					neighborCnt++;          // increament the separation neighor count
-
-				}// if (dist <= _SamplingRadius)
-
-			}// else  of if ( nBoid.position.y > 0 )
-		} // else of _Hemisphere == 1
-
-		  
-
-		} //  for(int nId = 0; nId < _BoidsNum; nId++)
-
-	// The scan over the neighbots is finished
+	//// The scan over the neighbots is finished
 
 	if (minIndex == -1) // no boid within the sampling radius
 	{ // no near boid; this does not happen because a boid is its own neigbor
-		_BoidLEDBuffer[pId].color = float4(0.0, 0.0, 0.0, 1.0);
+		_BoidLEDBuffer[pId].color = float4(1.0, 0.0, 0.0, 1.0);
 		//pBoidLED.color  = float4(1.0, 1.0, 1.0, 1.0);
 	}
 	else
 	{
-		//_BoidLEDBuffer[pId].color = float4(1.0, 1.0, 1.0, 1.0);
-		//pBoidLED.color = float4(0.0, 0.0, 0.0, 1.0);
-
-		/*_BoidLEDBuffer[pId].position = _BoidBuffer[minIndex].position;
-		_BoidLEDBuffer[pId].headDir = _BoidBuffer[minIndex].headDir;*/
-		if (_ColorSamplingMethod == 0) {
-			_BoidLEDBuffer[pId].color = _BoidBuffer[minIndex].color;
-		}
-		else 
-		{
-			_BoidLEDBuffer[pId].color = colorSum / (float)neighborCnt;
-
-		//_BoidLEDBuffer[pId].color = colorSum / weightSum;
-
-		}
+		_BoidLEDBuffer[pId].color = _BoidBuffer[minIndex].color;
 		
 		_BoidLEDBuffer[pId].nearestBoidID = minIndex;
 		_BoidLEDBuffer[pId].neighborCount  = neighborCnt;
-		//_BoidLEDBuffer[pId].wallNo = _SamplingWall;
-
-		/*_BoidLEDRenderDebugBuffer[pId].nearestBoidID = minIndex;
-		_BoidLEDRenderDebugBuffer[pId].neighborCount = neighborCnt;
-		_BoidLEDRenderDebugBuffer[pId].neighborRadius = minDist;
-		_BoidLEDRenderDebugBuffer[pId].nearestBoidColor  = _BoidBuffer[minIndex].color;
-		_BoidLEDRenderDebugBuffer[pId].avgColor = colorSum / (float)neighborCnt;
-
-		_BoidLEDRenderDebugBuffer0[pId][0] = (float)minIndex;
-		_BoidLEDRenderDebugBuffer0[pId][1] =  minDist;
-		_BoidLEDRenderDebugBuffer0[pId][2] = neighborCnt;
-		*/
-	
+		
 	}
-
-
-	//if (neighborCnt != 0) // This condition holds only for boids on the ground or the ceiling
-	//{
-	//		//avgColor = colorSum / weightSum;
-	//	    avgColor = colorSum / (float) neighborCnt;
-
-	//	    pBoidLED.color = avgColor;
-	//		//pBoidLED.color  = float4(1.0, 1.0, 1.0, 1.0);
-	//		
-	//} // 
-	//else 
-	//{ // no neighbor
-	//	// for debugging
-	//	 pBoidLED.color = float4(0.0, 0.0, 0.0, 1.0); // set the black color
-
-	//	pBoidLED.color = float4(1.0, 1.0, 1.0, 1.0); // set the black color
-	//}
 
 
 	return;

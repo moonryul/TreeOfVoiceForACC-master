@@ -289,7 +289,7 @@ public class LEDColorGenController : MonoBehaviour
         m_BoidLEDComputeShader.SetFloat("_MinChainRadius", m_startingRadiusOfInnerChain);
         m_BoidLEDComputeShader.SetFloat("_MaxChainRadius", m_endingRadiusOfOuterChainThreeTurns);
 
-        //m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
+        m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
 
         m_BoidLEDComputeShader.SetFloat("_MaxDomainRadius", m_boids.m_MaxDomainRadius);
         m_BoidLEDComputeShader.SetFloat("_MinDomainRadius", m_boids.m_MinDomainRadius);
@@ -651,9 +651,9 @@ public class LEDColorGenController : MonoBehaviour
        // float currTime = Time.time; //  seconds
 
        
-         m_boids.DetermineParamValue("_SamplingRadius",  out m_samplingRadius);
+        // m_boids.DetermineParamValue("_SamplingRadius",  out m_samplingRadius);
 
-        m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
+       // m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
 
         m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
      
