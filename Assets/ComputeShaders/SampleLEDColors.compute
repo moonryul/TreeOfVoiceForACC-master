@@ -106,7 +106,8 @@ RWStructuredBuffer<float4> _BoidLEDRenderDebugBuffer0;
 
 float _SamplingRadius;
 
-int  _Hemisphere;
+float  _Hemisphere;
+int  _ColorSamplingMethod;
 
 
 float _MaxDomainRadius; // 10
@@ -168,48 +169,53 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 		// Consider the neighbor  boids which are down
 		// projected onto the plane y = _HeimisphereGroundPosition
 
+		// Sample boids in the "hemisphere" above or below the given "_Hemisphere"
+		// which is the height or depth of the "bottom" of the "hemisphere"
 
-		if (_Hemisphere == 1)
-		{
-			if ( nBoid.position.y < 0)
-			{//  The boid is not in the upper hemisphere 
+		if (_Hemisphere >= 0)
+		{ // sample boids in the hemisphere above _Hemisphere
+
+		
+			if ( nBoid.position.y < _Hemisphere)
+			{//  The boid is not in the desired  hemisphere 
 			 //  ignore the boid
 				continue;
 			}
 
 			else
 			{
-				// Project the boid on the plane defined by _HeimisphereGroundPosition from which 
-		 //  the boids which contribute the color to pBoidLED.
-		// This projection is achieved by ignoring the y coordinate of the boids.
+				// Project the boid on the plane defined by _Heimisphere 
+				// This projection is achieved by ignoring the y coordinate of the boids.
 
 
 		   // minChainRadius: maxChainRadius => minDomainRadius: maxDomainRadius
 				float3 LEDBoidPosFromYAxis = float3(pBoidLED.position.x, 0.0, pBoidLED.position.z);
-				float LEDBoidRadius = length(LEDBoidPosFromYAxis);
+				float LEDBoidRadiusFromYAxis = length(LEDBoidPosFromYAxis);
 
-				if (LEDBoidRadius < _MinChainRadius) {
-					LEDBoidRadius = _MinChainRadius;
+				if (LEDBoidRadiusFromYAxis < _MinChainRadius) {
+					LEDBoidRadiusFromYAxis = _MinChainRadius;
 				}
 
-				if (LEDBoidRadius > _MaxChainRadius) {
-					LEDBoidRadius = _MaxChainRadius;
+				if (LEDBoidRadiusFromYAxis > _MaxChainRadius) {
+					LEDBoidRadiusFromYAxis = _MaxChainRadius;
 				}
 
-				float radiusForpBoidLED = _MinDomainRadius +
+				float radiusOfSampledBoidLEDFromYAxis = _MinDomainRadius +
 					(_MaxDomainRadius - _MinDomainRadius) / (_MaxChainRadius - _MinChainRadius)
-					* (LEDBoidRadius - _MinChainRadius);
+					* (LEDBoidRadiusFromYAxis - _MinChainRadius);
 
-				// get the boid corresponding to LED boid
+				// Get the boid corresponding to LED boid
 
 				//float3 newpBoidLEDPos = radiusOfBoidForpLEDBoid * pBoidLED.headDir;
 
 				//diffVec = nBoid.position - newLEDBoidPos;
 
-				dist = abs(length(float3(nBoid.position.x, 0, nBoid.position.z)) - radiusForpBoidLED);
+				dist = abs( length(float3(nBoid.position.x, 0, nBoid.position.z)) 
+					        - radiusOfSampledBoidLEDFromYAxis );
 
 
-				// check if the boid nBoid is a neighbor of the current boid pBoid for separation action
+				// check if the boid nBoid is a neighbor of the current boid pBoid 
+				// within the sampling radius
 
 				if (dist <= _SamplingRadius)
 
@@ -243,13 +249,13 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 
 			} // esle of  nBoid.position.y < 0
 
-		}//if (_Hemisphere ==1)
+		}//if (_Hemisphere >=0)
 
-		else // _Hemisphere == 0; lower hemisphere
+		else // (_Hemisphere < 0)
 		{ 
-			if ( nBoid.position.y > 0 )
+			if ( nBoid.position.y > _Hemisphere )
 
-			{//  The boid is not in the  lower hemisphere 
+			{//  The boid is not in the desired hemisphere 
 			 //  ignore the boid
 			 continue;  // go to the next boid
 
@@ -286,7 +292,8 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 				dist = abs(length(float3(nBoid.position.x, 0, nBoid.position.z)) - radiusForpBoidLED);
 
 
-				// check if the boid nBoid is a neighbor of the current boid pBoid for separation action
+				// check if the boid nBoid is a neighbor of the current boid pBoid within the
+				// sampling radius
 
 				if (dist <= _SamplingRadius)
 
@@ -339,11 +346,17 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 
 		/*_BoidLEDBuffer[pId].position = _BoidBuffer[minIndex].position;
 		_BoidLEDBuffer[pId].headDir = _BoidBuffer[minIndex].headDir;*/
-		_BoidLEDBuffer[pId].color = _BoidBuffer[minIndex].color;
-		//_BoidLEDBuffer[pId].color = colorSum / (float)neighborCnt;
+		if (_ColorSamplingMethod == 0) {
+			_BoidLEDBuffer[pId].color = _BoidBuffer[minIndex].color;
+		}
+		else 
+		{
+			_BoidLEDBuffer[pId].color = colorSum / (float)neighborCnt;
 
 		//_BoidLEDBuffer[pId].color = colorSum / weightSum;
 
+		}
+		
 		_BoidLEDBuffer[pId].nearestBoidID = minIndex;
 		_BoidLEDBuffer[pId].neighborCount  = neighborCnt;
 		//_BoidLEDBuffer[pId].wallNo = _SamplingWall;

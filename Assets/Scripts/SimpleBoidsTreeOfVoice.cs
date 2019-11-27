@@ -823,7 +823,7 @@ private void Awake()
 
         if (m_SimulationDeltaT >= m_AnimationCycle)
         {
-            m_SceneStartTime = m_currTime;
+            m_SceneStartTime = m_currTime; // m_currTime is set in Update()
            // m_SimulationDeltaT = 0f; // wrap to the beginning of actionPlan to repeat the scene
 
         }
@@ -1013,7 +1013,7 @@ protected void Simulate() // called from Update()
             DetermineParamValue("_CeilingMinAlpha",  out _ceilingMinAlpha);
             DetermineParamValue("_CeilingMaxAlpha",  out _ceilingMaxAlpha);
 
-
+            
             // apply the current values of the parameters to the compute shader
 
             m_BoidComputeShader.SetFloat("_SpeedFactor", _speedFactor);
@@ -1064,6 +1064,8 @@ protected void Simulate() // called from Update()
 
 
             m_BoidComputeShader.SetFloat("_DeltaTime", Time.deltaTime);
+
+            
 
             //Debug.Log("DeltaTime [second]=" + Time.deltaTime);
 

@@ -1158,63 +1158,63 @@ public class ActionPlanController : MonoBehaviour
 
             { "_GroundMaxHue", new List<Action> {
 
-                new Action() { T = new List<float> {0, 60}, V = 0f },
-                    new Action() { T = new List<float> {60,100 },  V = 0f},
-                         new Action() { T = new List<float> {100,140 },  V = 0f },
+                new Action() { T = new List<float> {0, 60}, V = -150f },
+                    new Action() { T = new List<float> {60,100 },  V = -150f},
+                         new Action() { T = new List<float> {100,140 },  V =-150f },
 
-                new Action() { T = new List<float> {140,200},  V =0f  },
+                new Action() { T = new List<float> {140,200},  V =-150f  },
 
-                    new Action() { T =  new List<float>{200, 230 }, V = 0f  },
-                        new Action() { T=  new List<float>{230, 300 }, V =  0f },
+                    new Action() { T =  new List<float>{200, 230 }, V =-150f  },
+                        new Action() { T=  new List<float>{230, 300 }, V =  -150f },
 
-                new Action() { T =  new List<float>{300, 360 },  V =0f },
-                    new Action() { T =  new List<float>{360, 390 },  V =0f },
+                new Action() { T =  new List<float>{300, 360 },  V =-150f },
+                    new Action() { T =  new List<float>{360, 390 },  V =-150f },
 
                                                }
              },
 
             { "_GroundMinSaturation", new List<Action> {
 
-                new Action() { T =  new List<float>{ 0, 140 }, V = 0f },
-                    new Action() { T =  new List<float>{140,200 },  V = 0f },
+                new Action() { T =  new List<float>{ 0, 140 }, V = 0.5f },
+                    new Action() { T =  new List<float>{140,200 },  V = 0.5f },
 
-                    new Action() { T =  new List<float>{200, 230 }, V = 0.0f },
-                        new Action() { T =  new List<float>{230, 300 }, V = 0.0f   },
+                    new Action() { T =  new List<float>{200, 230 }, V = 0.5f },
+                        new Action() { T =  new List<float>{230, 300 }, V = 0.5f   },
 
-                new Action() { T =  new List<float>{300, 360 },  V =  0.0f },
-                    new Action() { T =  new List<float>{360,390 }, V =  0f },
+                new Action() { T =  new List<float>{300, 360 },  V =  0.5f },
+                    new Action() { T =  new List<float>{360,390 }, V = 0.5f },
 
                                                }
              },
 
             { "_GroundMaxSaturation", new List<Action> {
 
-                new Action() { T =  new List<float>{0,140 },  V =  0.5f },
+                new Action() { T =  new List<float>{0,140 },  V =  1.0f },
 
-                new Action() { T =  new List<float>{140,230 },  V =  0.5f },
-                       new Action() { T = new List<float> {230, 300 },  V =0.5f },
+                new Action() { T =  new List<float>{140,230 },  V =  1.0f },
+                       new Action() { T = new List<float> {230, 300 },  V =1.0f },
 
-                new Action() { T = new List<float> {300, 360 }, V = 0.5f  },
-                    new Action() { T =  new List<float>{360, 390 }, V = 0.5f},
+                new Action() { T = new List<float> {300, 360 }, V = 1.0f  },
+                    new Action() { T =  new List<float>{360, 390 }, V = 1.0f},
 
                                                }
              },
 
             { "_GroundMinValue", new List<Action> {
 
-                new Action() { T = new List<float> {0,140 }, V =0.0f},
+                new Action() { T = new List<float> {0,140 }, V =0.5f},
 
-                new Action() { T=  new List<float>{140,230 },  V =  0.0f },
+                new Action() { T=  new List<float>{140,230 },  V =  0.5f },
 
-                new Action() { T =  new List<float>{230, 360 }, V = 0.0f },
-                    new Action() { T =  new List<float>{360,390 }, V =0.0f },
+                new Action() { T =  new List<float>{230, 360 }, V = 0.5f },
+                    new Action() { T =  new List<float>{360,390 }, V =0.5f },
 
                                                }
              },
 
             { "_GroundMaxValue", new List<Action> {
 
-                                     new Action() { T =  new List<float>{0,390 },  V =  0.5f },
+                                new Action() { T =  new List<float>{0,390 }, V =  1.0f },
                                  }
              },
 
@@ -1267,15 +1267,15 @@ public class ActionPlanController : MonoBehaviour
 
             { "_CeilingMaxHue", new List<Action> {
 
-                new Action() { T = new List<float> {0, 30f }, V =  360f },
+                new Action() { T = new List<float> {0, 30f }, V =  30f },
 
-                    new Action() { T=  new List<float>{30,60 },  V =360f },
-                        new Action() { T= new List<float> {60,100 },  V = 360f },
-                            new Action() { T=  new List<float>{100,140 },  V = 360f } ,
+                    new Action() { T=  new List<float>{30,60 },  V =30f },
+                        new Action() { T= new List<float> {60,100 },  V = 30f },
+                            new Action() { T=  new List<float>{100,140 },  V = 30f } ,
 
-                new Action() { T =  new List<float>{140, 230 }, V =360f },
+                new Action() { T =  new List<float>{140, 230 }, V =30f },
 
-                        new Action() { T=  new List<float>{230, 390 }, V=   360f },
+                        new Action() { T=  new List<float>{230, 390 }, V=  30f },
 
                       }
              },
@@ -1345,6 +1345,8 @@ public class ActionPlanController : MonoBehaviour
              },
 
            
+            // The following two parameters are used to sample boids for LEDs, not to 
+            // simulate the motions of the boids. The will be used in SampleLEDColors.compute
 
             { "_SamplingRadius", new List<Action> {
 
@@ -1368,12 +1370,12 @@ public class ActionPlanController : MonoBehaviour
 
                 new Action() { T =  new List<float>{0, 140 }, V = 1  }, // 
 
-                new Action() { T = new List<float> {140,230 },  V =  1 },
-                    new Action() { T =  new List<float>{230, 300 }, V =0 },
+                new Action() { T = new List<float> {140,230 },  V = 3 },
+                    new Action() { T =  new List<float>{230, 300 }, V = -1 },
 
 
-                new Action() { T= new List<float> {300,360 }, V =  0 },
-                    new Action() { T =  new List<float>{360,390 }, V = 0 },
+                new Action() { T= new List<float> {300,360 }, V =  -2 },
+                    new Action() { T =  new List<float>{360,390 }, V = -3 },
 
                 }
              },

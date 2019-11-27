@@ -725,8 +725,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 468306996}
   m_HandleRect: {fileID: 468306995}
   m_Direction: 0
-  m_Value: -0.0000004487883
-  m_Size: 0.9150001
+  m_Value: 0
+  m_Size: 0.915
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2154,7 +2154,7 @@ MonoBehaviour:
   m_actionPlanController: {fileID: 0}
   m_totalNumOfLEDs: 0
   m_samplingRadius: 1
-  m_LEDChainHeight: 5
+  m_LEDChainHeight: 7
   m_Hemisphere: 1
   m_BoidLEDComputeShader: {fileID: 7200000, guid: 57cedd4fb383ff940b8193c90698019d,
     type: 3}
@@ -2227,7 +2227,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_boidInstanceMaterial: {fileID: 2100000, guid: edd2a7808224ef04dace53a43dd2a8dc,
     type: 2}
-  m_instanceMeshSphere: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_instanceMeshSphere: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
   m_useCircleMesh: 0
   m_useSphereMesh: 1
   m_useCylinderMesh: 0
@@ -2296,6 +2296,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_boidLEDInstanceMaterial: {fileID: 2100000, guid: bb23dba0c1e1a64488eaa91992156c54,
     type: 2}
+  m_colorSamplingMethod: 0
   m_scale: 1
 --- !u!1 &1306796409
 GameObject:
@@ -3645,7 +3646,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1841744765}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -3815,7 +3816,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!108 &1919780592
 Light:
   m_ObjectHideFlags: 0

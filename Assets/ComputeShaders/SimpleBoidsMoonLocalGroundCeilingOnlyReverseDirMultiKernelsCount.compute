@@ -593,8 +593,8 @@ void computeBoidColor(inout Boid pBoid)
 			alpha = 1;					   		
 
 		// debug
-			float s = 0.5;
-			float l = 0.5;
+			//float s = 0.5;
+			//float l = 0.5;
 			pBoid.color = float4(hslToRgb(hDeg / 360, s, l), alpha);
 
 			// debug
@@ -720,8 +720,8 @@ void computeBoidColor(inout Boid pBoid)
 		alpha = 1;
 			   
 		// debug
-		float s = 0.5;
-		float l = 0.5;
+		//float s = 0.5;
+		//float l = 0.5;
 		float3 hsv = hslToHsv(hDeg, s, l);
 
 		//float3 hsv = hslToHsv(angDeg, hDeg, atan2(pBoid.position.z, pBoid.position.x));

@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 
 public class BoidLEDRendererTreeOfVoice : MonoBehaviour
 {
+    [SerializeField] Material m_boidLEDInstanceMaterial;
+    
 
     // Update is called once per frame
     bool m_fileWritten = false;
@@ -39,7 +41,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
     LEDColorGenController m_LEDColorGenController;
     BoidRendererTreeOfVoice m_boidRendererTreeOfVoice;
 
-    [SerializeField] Material m_boidLEDInstanceMaterial;
+  
     
     CylinderMesh m_instanceMeshCylinder;
     CircleMesh m_instanceMeshCircle;
@@ -80,6 +82,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
 
 
     BoidLEDData[] m_BoidLEDArray;
+    
     StreamWriter m_writer;
     FileStream m_oStream;
     string m_path;
@@ -351,7 +354,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
         //m_boidLEDInstanceMaterial.SetFloat("_LEDCeilingHeight", m_LEDCeilingHeight );
 
         m_boidLEDInstanceMaterial.SetVector("_Scale", new Vector3(m_scale, m_scale, m_scale));
-
+       
         //m_boidLEDInstanceMaterial.SetVector("GroundMaxCorner", m_boids.GroundMaxCorner);
         //m_boidLEDInstanceMaterial.SetVector("GroundMinCorner", m_boids.GroundMinCorner);
 

@@ -74,14 +74,15 @@ public class LEDColorGenController : MonoBehaviour
     public SimpleBoidsTreeOfVoice m_boids;
     public ActionPlanController m_actionPlanController;
 
-   
+    public int m_colorSamplingMethod = 0; // 0 = get the nearest neighbor color
+                                          // 1 = get the average color of the neighbors
 
     public int m_totalNumOfLEDs;
 
   
     public float m_samplingRadius = 1; //m
 
-    public float m_LEDChainHeight = 5; // the height of the LED chain 
+    public float m_LEDChainHeight = 9; // the height of the LED chain 
 
     public float m_Hemisphere = 1;
 
@@ -109,10 +110,10 @@ public class LEDColorGenController : MonoBehaviour
     public float m_LEDInterval = 0.5f; // 0.5 m
     //public int m_SphericalMotion = 0;  
 
-    public float m_startingRadiusOfInnerChain = 0.7f; // m
-    public float m_endingRadiusOfInnerChainThreeTurns = 1f;
+    public float m_startingRadiusOfInnerChain = 0.1f; // m
+    public float m_endingRadiusOfInnerChainThreeTurns = 0.8f;
 
-    public float m_startingRadiusOfOuterChain = 1.7f; // m
+    public float m_startingRadiusOfOuterChain = 1.4f; // m
     public float m_endingRadiusOfOuterChainThreeTurns = 2f;
 
    // public float m_MaxDomainRadius = 10; // 10
@@ -288,7 +289,7 @@ public class LEDColorGenController : MonoBehaviour
         m_BoidLEDComputeShader.SetFloat("_MinChainRadius", m_startingRadiusOfInnerChain);
         m_BoidLEDComputeShader.SetFloat("_MaxChainRadius", m_endingRadiusOfOuterChainThreeTurns);
 
-        m_BoidLEDComputeShader.SetInt("_Hemisphere", (int)Mathf.Round(m_Hemisphere));
+        //m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
 
         m_BoidLEDComputeShader.SetFloat("_MaxDomainRadius", m_boids.m_MaxDomainRadius);
         m_BoidLEDComputeShader.SetFloat("_MinDomainRadius", m_boids.m_MinDomainRadius);
@@ -299,7 +300,8 @@ public class LEDColorGenController : MonoBehaviour
            
         m_BoidLEDComputeShader.SetBuffer(m_kernelIDLED,  "_BoidBuffer", m_boids.m_BoidBuffer);
 
-        
+        m_BoidLEDComputeShader.SetInt("_ColorSamplingMethod", m_colorSamplingMethod);
+
         m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
 
 
@@ -650,11 +652,12 @@ public class LEDColorGenController : MonoBehaviour
 
        
          m_boids.DetermineParamValue("_SamplingRadius",  out m_samplingRadius);
+
         m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
 
         m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
      
-        m_BoidLEDComputeShader.SetInt("_Hemisphere", (int) Mathf.Round( m_Hemisphere) );
+        m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere );
         
        
 

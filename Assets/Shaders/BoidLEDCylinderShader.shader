@@ -1,4 +1,4 @@
-﻿Shader "Custom/BoidLEDCylinderShader" {
+﻿Shader "Custom/BoidLEDShader" {
 	//The Properties block contains shader variables (textures, colors etc.) 
 	//that will be saved as part of the Material, and displayed in the material inspector.
     Properties {
@@ -126,16 +126,10 @@
 			float3  CeilingMaxCorner;
 
 			float3 _Scale;
-
-			float _CeilingHeight;
-
-			int _BoidOrLED;
-
+				
 			int   _BloidsNum;
 			float _CohesionRadius;
 
-
-			//float   Use3DBoids;
 
         #if SHADER_TARGET >= 45
            // StructuredBuffer<Boid> _BoidBuffer;	
