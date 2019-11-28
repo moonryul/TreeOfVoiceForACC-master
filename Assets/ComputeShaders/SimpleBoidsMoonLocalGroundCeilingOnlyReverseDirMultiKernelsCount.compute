@@ -37,7 +37,9 @@ struct Boid
 
 RWStructuredBuffer<Boid> _BoidBuffer;
 
-float _MinDomainRadius;
+
+float _CeilingInnerRadius; // minimum ceiling radius used as the min radius for both ground and ceililing
+//float _MinDomainRadius;
 float _MaxDomainRadius;
 
 int _BoidsNum;
@@ -97,7 +99,6 @@ float3 _CeilingMinCorner;
 float _GroundRadius; // maximum ground radias
 float _CeilingRadius;
 
-float _CeilingInnerRadius; // minimum ceiling radius used as the min radius for both ground and ceililing
 //float _GroundPlaneDepth, _CeilingPlaneDepth;
 
 

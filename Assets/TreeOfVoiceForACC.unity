@@ -468,7 +468,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 407466412}
   m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 12, z: 0}
+  m_LocalPosition: {x: 0, y: 10, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -555,8 +555,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 468306996}
   m_HandleRect: {fileID: 468306995}
   m_Direction: 0
-  m_Value: -0.0000004487883
-  m_Size: 0.9150001
+  m_Value: -0.00000089757583
+  m_Size: 0.915
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -754,7 +754,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 562297673}
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -10, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1990,6 +1990,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1304115014}
   - component: {fileID: 1304115013}
+  - component: {fileID: 1304115015}
   - component: {fileID: 1304115023}
   - component: {fileID: 1304115026}
   - component: {fileID: 1304115019}
@@ -1998,7 +1999,6 @@ GameObject:
   - component: {fileID: 1304115024}
   - component: {fileID: 1304115022}
   - component: {fileID: 1304115021}
-  - component: {fileID: 1304115015}
   - component: {fileID: 1304115018}
   - component: {fileID: 1304115017}
   - component: {fileID: 1304115016}
@@ -2062,21 +2062,21 @@ MonoBehaviour:
   m_AnimationCycle: 390
   m_SimulationDeltaT: 0
   UseActionPlan: 1
-  m_BoidsNum: 3000
+  m_BoidsNum: 5000
   MinBoidRadius: 0.1
-  MaxBoidRadius: 0.3
-  _minSpeed: 1
+  MaxBoidRadius: 0.5
+  _minSpeed: 0.5
   _maxSpeed: 3
   _speedFactor: 1
   _scaleFactor: 1
   _separate:
-    Radius: 0.6
+    Radius: 2
     Weight: 0.5
   _alignment:
-    Radius: 2
+    Radius: 4
     Weight: 0.3
   _cohesion:
-    Radius: 2
+    Radius: 6
     Weight: 0.2
   _groundWeight:
     FlockingWeight: 0.3
@@ -2086,32 +2086,32 @@ MonoBehaviour:
     FlockingWeight: 0.2
     ConvergeWeight: 0.3
     CirculationWeight: 0.5
-  _groundMinHue: 0
-  _groundMaxHue: 1
-  _groundMinSaturation: 0.2
-  _groundMaxSaturation: 1
-  _groundMinValue: 0.2
-  _groundMaxValue: 1
+  _groundMinHue: -180
+  _groundMaxHue: 0
+  _groundMinSaturation: 0
+  _groundMaxSaturation: 0.5
+  _groundMinValue: 0
+  _groundMaxValue: 0.5
   _groundMinAlpha: 0.2
   _groundMaxAlpha: 1
   _ceilingMinHue: 0
-  _ceilingMaxHue: 1
-  _ceilingMinSaturation: 0.2
+  _ceilingMaxHue: 180
+  _ceilingMinSaturation: 0.5
   _ceilingMaxSaturation: 1
-  _ceilingMinValue: 0.2
+  _ceilingMinValue: 0.5
   _ceilingMaxValue: 1
   _ceilingMinAlpha: 0.2
   _ceilingMaxAlpha: 1
-  GroundMinCorner: {x: -10, y: 0, z: -10}
-  GroundMaxCorner: {x: 10, y: 0, z: 10}
-  CeilingMinCorner: {x: -10, y: 12, z: -10}
-  CeilingMaxCorner: {x: 10, y: 12, z: 10}
-  GroundRadius: 12
-  CeilingRadius: 12
+  GroundMinCorner: {x: -10, y: -10, z: -10}
+  GroundMaxCorner: {x: 10, y: -10, z: 10}
+  CeilingMinCorner: {x: -10, y: 10, z: -10}
+  CeilingMaxCorner: {x: 10, y: 10, z: 10}
+  GroundRadius: 10
+  CeilingRadius: 10
   CeilingInnerRadius: 0.7
   numOfWalls: 2
   m_numOfWallGizmos: 3
-  m_MinDomainRadius: 0.7
+  m_MinDomainRadius: 0.1
   m_MaxDomainRadius: 10
   m_BoidComputeShader: {fileID: 7200000, guid: cd82e75d04265734e8c85ae89b7bdd3c, type: 3}
   gameObjForWallTransforms:
@@ -2179,15 +2179,15 @@ MonoBehaviour:
   m_actionPlanController: {fileID: 0}
   m_colorSamplingMethod: 0
   m_totalNumOfLEDs: 0
-  m_samplingRadius: 3
+  m_samplingRadius: 0.05
   m_LEDChainHeight: 9
   m_Hemisphere: 1
   m_BoidLEDComputeShader: {fileID: 7200000, guid: 57cedd4fb383ff940b8193c90698019d,
     type: 3}
-  m_LEDInterval: 0.5
-  m_startingRadiusOfInnerChain: 0.7
-  m_endingRadiusOfInnerChainThreeTurns: 1
-  m_startingRadiusOfOuterChain: 1.7
+  m_LEDInterval: 0.2
+  m_startingRadiusOfInnerChain: 0.1
+  m_endingRadiusOfInnerChainThreeTurns: 0.8
+  m_startingRadiusOfOuterChain: 1.4
   m_endingRadiusOfOuterChainThreeTurns: 2
   m_firstChain: 48
   m_secondChain: 40

@@ -162,14 +162,14 @@ public class SimpleBoidsTreeOfVoice : MonoBehaviour
     public float CeilingRadius = 10f;
     // public float CeilingInnerRadius = 0.7f;
 
-    public float CeilingInnerRadius = 0.7f;
+    public float m_CeilingInnerRadius = 0.1f;
     
     public int numOfWalls = 2; // ground, ceiling, front wall
 
     public int m_numOfWallGizmos = 3; // ground, ceiling, front wall
     static private bool m_wallTransformsDefined = false;
 
-    public float m_MinDomainRadius = 0.7f; // the minumum radius of of the xz domain; used LED boid rendering
+    //public float m_MinDomainRadius = 0.1f; // the minumum radius of of the xz domain; used LED boid rendering
     public float m_MaxDomainRadius = 10; // // the maximum radius of of the xz domain; used in LED boid rendering
 
 
@@ -345,7 +345,7 @@ private void Awake()
 
 
 
-        m_MinDomainRadius = CeilingInnerRadius; // the minumum radius of of the xz domain; used LED boid rendering
+        //m_MinDomainRadius = CeilingInnerRadius; // the minumum radius of of the xz domain; used LED boid rendering
         m_MaxDomainRadius = GroundRadius;
 
         m_actionPlanController = this.gameObject.GetComponent<ActionPlanController>();
@@ -568,7 +568,8 @@ private void Awake()
 
         m_BufferEndIndex = (int)m_BoidsNum;
 
-        m_BoidComputeShader.SetFloat("_MinDomainRadius", m_MinDomainRadius);
+        // m_BoidComputeShader.SetFloat("_MinDomainRadius", m_MinDomainRadius);
+        m_BoidComputeShader.SetFloat("_CeilingInnerRadius", m_CeilingInnerRadius);
         m_BoidComputeShader.SetFloat("_MaxDomainRadius", m_MaxDomainRadius);
 
         m_BoidComputeShader.SetInt("_BoidsNum", (int)m_BoidsNum);
@@ -634,7 +635,7 @@ private void Awake()
         m_BoidComputeShader.SetFloat("_GroundRadius", GroundRadius);
         m_BoidComputeShader.SetFloat("_CeilinRadius", CeilingRadius);
 
-        m_BoidComputeShader.SetFloat("_CeilingInnerRadius", CeilingInnerRadius);
+    
 
         
         m_KernelIdGround = m_BoidComputeShader.FindKernel("SimulateBoids");

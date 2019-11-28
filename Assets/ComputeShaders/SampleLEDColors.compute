@@ -109,9 +109,9 @@ float _SamplingRadius;
 float  _Hemisphere;
 int  _ColorSamplingMethod;
 
-
+float _CeilingInnerRadius; // minimum ceiling radius used as the min radius for both ground and ceililing
 float _MaxDomainRadius; // 10
-float _MinDomainRadius; // 0.7
+//float _MinDomainRadius; // 0.7
 
 float _MaxChainRadius; // 2 m
 float _MinChainRadius;  // 0.7 m
@@ -166,8 +166,8 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 	// apply three boid rules using neighbors
 
 
-	float minDist = _MaxDomainRadius;
-		
+	float minDist = _SamplingRadius ; // 0.05 m = 5cm;
+
 	int minIndex = -1;
 
 	// Get the boid whose radius from the y axis is "equal" to the radius of pLEDBoid
@@ -213,13 +213,15 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 			neighborCnt++;
 
 		}// if (dist <= _SamplingRadius)
+		else continue;
+
 	} // for
 
 	//// The scan over the neighbots is finished
 
 	if (minIndex == -1) // no boid within the sampling radius
 	{ // no near boid; this does not happen because a boid is its own neigbor
-		_BoidLEDBuffer[pId].color = float4(1.0, 0.0, 0.0, 1.0);
+		_BoidLEDBuffer[pId].color = float4(0.0, 0.0, 0.0, 1.0);
 		//pBoidLED.color  = float4(1.0, 1.0, 1.0, 1.0);
 	}
 	else

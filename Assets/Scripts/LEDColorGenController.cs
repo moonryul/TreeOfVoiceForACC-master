@@ -80,7 +80,7 @@ public class LEDColorGenController : MonoBehaviour
     public int m_totalNumOfLEDs;
 
   
-    public float m_samplingRadius = 1; //m
+    public float m_samplingRadius = 0.05f; //10cm
 
     public float m_LEDChainHeight = 9; // the height of the LED chain 
 
@@ -107,10 +107,11 @@ public class LEDColorGenController : MonoBehaviour
 
    
     
-    public float m_LEDInterval = 0.5f; // 0.5 m
+    public float m_LEDInterval = 0.2f; // 20cm
     //public int m_SphericalMotion = 0;  
 
     public float m_startingRadiusOfInnerChain = 0.1f; // m
+    // the startingRadiusOfInnerChain should be equal to the CeilingInnerRadius of SimpleBoidsForTreeOfVoice
     public float m_endingRadiusOfInnerChainThreeTurns = 0.8f;
 
     public float m_startingRadiusOfOuterChain = 1.4f; // m
@@ -124,10 +125,10 @@ public class LEDColorGenController : MonoBehaviour
 
     //cf.  public float CeilingInnerRadius = 0.7f;
 
-    public int m_firstChain = 48;
-    public int m_secondChain = 40;
-    public int m_thirdChain = 60;
-    public int m_fourthChain = 52;
+    public int m_firstChain = 30;
+    public int m_secondChain = 44;
+    public int m_thirdChain = 50;
+    public int m_fourthChain = 53;
 
     public float m_beginFromInChain1 = -135f;
     public float m_beginFromInChain2 = -70f;
@@ -288,13 +289,14 @@ public class LEDColorGenController : MonoBehaviour
         }
 
 
-        m_BoidLEDComputeShader.SetFloat("_MinChainRadius", m_startingRadiusOfInnerChain);
+        m_BoidLEDComputeShader.SetFloat("_CeilingInnerRadius", m_startingRadiusOfInnerChain);
         m_BoidLEDComputeShader.SetFloat("_MaxChainRadius", m_endingRadiusOfOuterChainThreeTurns);
 
         m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
 
         m_BoidLEDComputeShader.SetFloat("_MaxDomainRadius", m_boids.m_MaxDomainRadius);
-        m_BoidLEDComputeShader.SetFloat("_MinDomainRadius", m_boids.m_MinDomainRadius);
+        // m_BoidLEDComputeShader.SetFloat("_MinDomainRadius", m_boids.m_MinDomainRadius);
+        m_BoidLEDComputeShader.SetFloat("_CeilingInnerRadius", m_boids.m_CeilingInnerRadius);
 
         //m_BoidsNum = (int)m_boids.m_BoidsNum;
 
@@ -328,6 +330,9 @@ public class LEDColorGenController : MonoBehaviour
 
     }// void Start()
 
+    public void OnValidate()
+    {
+    }
 
     protected void SetBoidLEDArray(BoidLEDData[] m_BoidLEDArray)
     {
@@ -660,8 +665,8 @@ public class LEDColorGenController : MonoBehaviour
         m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
      
         m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere );
-        
-       
+
+        m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius); // you can change inspector variable' value at runtime
 
         m_BoidLEDComputeShader.Dispatch(m_kernelIDLED, m_threadGroupSize, 1, 1);
 
