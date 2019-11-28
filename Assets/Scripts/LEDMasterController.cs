@@ -35,16 +35,18 @@ public class LEDMasterController : MonoBehaviour
     float m_Delay;
     public int m_LEDCount; // from LEDColorGenController component
 
+    int m_index;
     //////////////////////////////////
     //
     // Function
     //
     //////////////////////////////////
 
-    
+    byte[] m_LEDArray1;
 
     private void Awake()
     { // init me
+
 
         // Serial Communication between C# and Arduino
         //http://www.hobbytronics.co.uk/arduino-serial-buffer-size = how to change the buffer size of arduino
@@ -102,9 +104,19 @@ public class LEDMasterController : MonoBehaviour
         // public event LEDSenderHandler m_ledSenderHandler;
 
         m_LEDColorGenController = this.gameObject.GetComponent<LEDColorGenController>();
+
         m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs;
 
         m_LEDArray = new byte[m_LEDCount * 3]; // 280*3 = 840 < 1024
+
+
+        // prepare test led array
+        
+        m_LEDArray[0] = 255;
+        m_LEDArray[1] = 0;
+        m_LEDArray[2] = 0;
+
+        int m_index = 0;
 
         // define an action
         m_updateArduino = () => {
@@ -115,12 +127,12 @@ public class LEDMasterController : MonoBehaviour
 
             try
             {
-                Debug.Log(" send LED array to arduino");
-                for (int i =0; i < m_LEDArray.Length; i++)
-                {
+             
+               // for (int i =0; i < m_LEDArray.Length; i++)
+               // {
                     //Debug.Log(i + "th byte:" +m_LEDArray[i]);
-                }
-                //m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
+               // }
+                m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }
             catch (Exception ex)
             {
@@ -143,6 +155,10 @@ public class LEDMasterController : MonoBehaviour
 
     public void UpdateLEDArray(byte[] ledArray)
     {
+        // use prepared ledArray rather than given for debugging
+
+
+
         // Send the new LED array only when the sending thread has finished sending the previous LEDArray
         // THat is, only when m_Thread.IsAlive is false. Tit happends when the method of the thread returns;
         // That is when the sending thread has sent all the LED array.
@@ -157,21 +173,45 @@ public class LEDMasterController : MonoBehaviour
         // m_MyThread.Start() is only valid for threads in the Unstarted state.
         //  What needs done in cases like this is to create a new thread instance and invoke Start() on the new instance.
 
+        // send prepared byte arrays for debugging
+
         if ( !m_Thread.IsAlive )
         {
            
             try
             {
                 // use the new LED array for the new invocation of the sending thread
+              
+                
+                Debug.Log(" send LED array to arduino");
+
+                //for (int i = 0; i < m_LEDCount; i++)
+                //{
+                //    ledArray[3 * i] = 0;
+                //    ledArray[3 * i + 1] = 0;
+                //    ledArray[3 * i + 2] = 0;
+
+                //}
+
+                //ledArray[3 * m_index + 0] = 255;
+                //ledArray[3 * m_index + 1] = 0;
+                //ledArray[3 * m_index + 2] = 0;
+
+                //m_index++;
+                //if (m_index == m_LEDCount)
+                //{
+                //    m_index = 0; // wrap the index
+                //}
 
                 m_LEDArray = ledArray;
 
-                m_Thread = new Thread(new ThreadStart(m_updateArduino) );
+                m_Thread = new Thread(new ThreadStart(m_updateArduino));
                 //m_Thread.IsBackground = true;
 
                 // Starting The thread sends m_LEDArray to the arduino master
                 m_Thread.Start();
-              
+
+
             }
 
             catch (Exception ex)
@@ -202,7 +242,7 @@ public class LEDMasterController : MonoBehaviour
         }
         else
         {
-            Debug.Log("Thread is alive; Wait until it finishes");
+            Debug.Log("Thread is alive; Wait until it finishes and the arrived array of led bytes is discarded");
 
             // The sending thread is still busy sending  the previous LED array =>: The arrived LED array is discarded
         }
@@ -212,7 +252,7 @@ public class LEDMasterController : MonoBehaviour
 
     void Update()
     {
-      
+       
     }
 
 }//public class LEDMasterController 

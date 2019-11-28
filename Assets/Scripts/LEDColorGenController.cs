@@ -77,7 +77,7 @@ public class LEDColorGenController : MonoBehaviour
     public int m_colorSamplingMethod = 0; // 0 = get the nearest neighbor color
                                           // 1 = get the average color of the neighbors
 
-    public int m_totalNumOfLEDs;
+    public int m_totalNumOfLEDs; // computed within script
 
   
     public float m_samplingRadius = 0.05f; //10cm

@@ -6,9 +6,10 @@
 // Slave_LED1.ino uses UNO
 //// 참조 사이트 : https://weathergadget.wordpress.com/2016/05/19/usi-spi-slave-communication/
 
-#define SS 10
-#define NUMPIXELS1 40 // Number of Pixies in the strip
-#define PIXIEPIN  6 // Pin number for SoftwareSerial output to the LED chain
+//#define SS 10 // uno, sPI pin
+#define SS  53 //mega spi pin
+#define NUMPIXELS1 30 // Number of Pixies in the strip
+#define PIXIEPIN  5 // Pin number for SoftwareSerial output to the LED chain
 
 SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS1, &pixieSerial);
@@ -20,11 +21,11 @@ volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
  
 void setup() {
-  Serial.begin(115200); // have to send on master in, *slave out*
+  //Serial.begin(115200); // have to send on master in, *slave out*
 
-  Serial1.begin(115200); 
+  //Serial1.begin(115200); 
 
-  //pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
+  pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   SPI.begin(); //PB2 - PB4 are converted to SS/, MOSI, MISO, SCK
 
   pinMode(SS, INPUT);
@@ -64,15 +65,23 @@ void setup() {
 ISR (SPI_STC_vect) {
   byte c = SPDR;  // grab byte from SPI Data Register
   
-  if( c == 0 ){
-    showByte = 0;
-	m_process_it = true;
-    Serial1.println("show command");
-    }
-  else if( m_pos < sizeof(buf)){
+ if ( m_pos < bufferSize )
+ {
     buf[ m_pos++ ]=c;	
-  }
+    if( m_pos == bufferSize )
+    {
  
+     m_process_it = true;
+    m_pos =0;
+    }//if
+
+//    else { // the buffer is not yet emptied but new byte has been arrived via interrupt
+//           // we need to ignore it. Once we ignore the first byte, we need to ignore the entire array of one frame
+//      m_pos ++
+//      
+//    }
+    
+ } //if
 }//ISR (SPI_STC_vect) 
  
 void loop() {
@@ -83,15 +92,15 @@ void loop() {
 		for (int i = 0; i < NUMPIXELS1; i++)
 		{
 			strip.setPixelColor(i, buf[i * 3 + 0], buf[i * 3 + 1], buf[i * 3 + 2]);
-			Serial1.println(buf[i * 3 + 0]);
-			Serial1.print(buf[i * 3 + 1]);
-			Serial1.print(buf[i * 3 + 2]);
+		//	Serial1.println(buf[i * 3 + 0]);
+		//	Serial1.print(buf[i * 3 + 1]);
+		//	Serial1.print(buf[i * 3 + 2]);
 		}
 
 		strip.show(); // show command has been  recieved
-		m_pos = 0;
+	 // m_pos = 0;
 		m_process_it = false;
 
 		//SPI.endTransaction();// // enable interrupt
-	}
-}
+	} // if
+} // loop()

@@ -8,8 +8,8 @@
 //http://gammon.com.au/forum/?id=10892
 
 #define SS 53
-#define NUMPIXELS2 40 // Number of Pixies in the strip
-#define PIXIEPIN  6 // Pin number for SoftwareSerial output to the LED chain
+#define NUMPIXELS2 44 // Number of Pixies in the strip
+#define PIXIEPIN  5 // Pin number for SoftwareSerial output to the LED chain
 
 SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS2, &pixieSerial);
@@ -22,7 +22,7 @@ volatile boolean m_process_it = false;
  
 void setup() 
 {
-  Serial.begin(9600); // have to send on master in, *slave out*
+  //Serial.begin(9600); // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   SPI.begin(); //PB2 - PB4 are converted to SS/, MOSI, MISO, SCK
 
@@ -74,16 +74,27 @@ ISR (SPI_STC_vect) {
  
  // replace the above by the following
 
-if( c == 0 )
- {
-	m_process_it = true;
-    Serial1.println("show command");
- }
- else if( m_pos < sizeof(buf))
-  {
-    buf[ m_pos++ ]=c;  
-  }
+//if( c == 0 )
+// {
+//	m_process_it = true;
+//    Serial1.println("show command");
+// }
+// else if( m_pos < sizeof(buf))
+//  {
+//    buf[ m_pos++ ]=c;  
+//  }
 
+    if (m_pos < bufferSize ) 
+    { 
+    buf[ m_pos++ ]=c;  
+    if( m_pos == bufferSize )
+    {
+ 
+     m_process_it = true;
+     m_pos =0;
+    }
+    }
+    
 } // ISR (SPI_STC_vect) 
 
 void loop() 
@@ -119,13 +130,13 @@ void loop()
     for(int i=0; i<NUMPIXELS2; i++) 
 	{ 
       strip.setPixelColor (i, buf[i*3+0], buf[i*3+1], buf[i*3+2] );
-      Serial1.println( buf[i*3+0]);
-      Serial1.println( buf[i*3+1]);
-      Serial1.println( buf[i*3+2]);
+    ///  Serial1.println( buf[i*3+0]);
+   //   Serial1.println( buf[i*3+1]);
+   //   Serial1.println( buf[i*3+2]);
     }
 
 	strip.show(); // show command has been  recieved => update the LED colors in the chain
-	m_pos = 0;
+//	m_pos = 0;
 	m_process_it = false;
 
 	//SPI.endTransaction();// // enable interrupt

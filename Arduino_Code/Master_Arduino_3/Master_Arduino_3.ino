@@ -9,11 +9,11 @@
 // +5v(if required)
 // GND(for signal return)
 //
-// Arduino Mega
-// 53 (SS)
-// 50 (MISO)
-// 51 (MOSI)
-// 52 (SCK)
+// Arduino Mega (master)  - Arduino Mega (slave)
+// 53 (SS)              -- 53 (SS)
+// 50 (MISO)            -- 50 (MISO)
+// 51 (MOSI)            -- 51 (MOSI)
+// 52 (SCK)            --  52 (SCK)
 // https://m.blog.naver.com/PostView.nhn?blogId=yuyyulee&logNo=220331139392&proxyReferer=https%3A%2F%2Fwww.google.com%2F
 /////////////////////////////////////////////////////////
 // In C:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src: SPI.h constructs SPI object as extern SPIClass SPI
@@ -22,17 +22,17 @@
 #include <SPI.h>
 
 // The built-in pin number of the slave, which is used within SPI.Begin()
-int ss1 = 53; 
-int ss2 = 49;
-int ss3 = 48; 
-int ss4 = 47; 
+int ss1 = 53; // connect master pin 53 the first slave pin 53 
+int ss2 = 49; // connect master pin 49 to the second slave pin 53
+int ss3 = 48; // connect master pin 48 to the third  slave pin 53
+int ss4 = 47; // connect master pin 47 to the fourth slave pin 53
 //int ss5 = 46; 
 
 // A total num of LED = 200; each slave processes 40 LEDs
-const int NumPixels1 = 40;
-const int NumPixles2 = 40;
-const int NumPixels3 = 60;
-const int NumPixels4 = 60;
+const int NumPixels1 = 30;
+const int NumPixles2 = 44;
+const int NumPixels3 = 50;
+const int NumPixels4 = 53;
 
 const int group1ByteSize = NumPixels1 * 3;
 const int group2ByteSize = NumPixles2 * 3;
@@ -95,7 +95,7 @@ void setup (void) {
    // USB port in the PC to Pin 19 and 18; Also open another arduino IDE for the second serial port, Serial1.
    // Use the first arduino IDE to upload the arduino code, and use the second arduino IDE to report messages.
 
-   Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
+  //Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
    
 }
  
@@ -171,10 +171,10 @@ void loop (void) {
 
 		// report the read bytes to the serial monitor
 		//  size_t println(const char[]);
-		Serial1.println(" read bytes:" + availCount);
-		for (int i = 0; i < availCount; i++) {
-			Serial1.println( totalRecieveBuffer[m_accumByteCount + i] );
-		}
+//		Serial1.println(" read bytes:" + availCount);
+//		for (int i = 0; i < availCount; i++) {
+//			Serial1.println( totalRecieveBuffer[m_accumByteCount + i] );
+//		}
 
 		m_accumByteCount += availCount;
 
@@ -196,10 +196,10 @@ void loop (void) {
 	
       
 
-		Serial1.println(" read bytes:" + countToRead);
-		for (int i = 0; i < countToRead; i++) {
-			Serial1.println(totalRecieveBuffer[m_accumByteCount + i]);
-		}
+//		Serial1.println(" read bytes:" + countToRead);
+//		for (int i = 0; i < countToRead; i++) {
+//		Serial1.println(totalRecieveBuffer[m_accumByteCount + i]);
+//		}
 
 		// Now that m_totalByteSize of bytes are read, set the accumulation byte size to zero for the next LED array 
 		m_accumByteCount = 0;
@@ -326,59 +326,59 @@ void loop (void) {
 
 
 	 // send show to the first slave:
-   SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
-   digitalWrite(ss1, LOW);
-   digitalWrite(ss2, HIGH);
-   digitalWrite(ss3, HIGH);
-   digitalWrite(ss4, HIGH);
+ //  SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
+ //  digitalWrite(ss1, LOW);
+ //  digitalWrite(ss2, HIGH);
+ //  digitalWrite(ss3, HIGH);
+ //  digitalWrite(ss4, HIGH);
    //digitalWrite(ss5, HIGH);
    
-   SPI.transfer(m_showByte);
+ //  SPI.transfer(m_showByte);
   // Serial.println(m_showByte+"1"); //for test
-   digitalWrite(ss1, HIGH);
-   SPI.endTransaction(); 
+ //  digitalWrite(ss1, HIGH);
+ //  SPI.endTransaction(); 
 
 
 	 // send show to the second slave:
-   SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
-   digitalWrite(ss1, HIGH);
-   digitalWrite(ss2, LOW);
-   digitalWrite(ss3, HIGH);
-   digitalWrite(ss4, HIGH);
+   //SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
+  // digitalWrite(ss1, HIGH);
+  // digitalWrite(ss2, LOW);
+ //  digitalWrite(ss3, HIGH);
+ //  digitalWrite(ss4, HIGH);
    //digitalWrite(ss5, HIGH);
    
-   SPI.transfer( m_showByte);
+  // SPI.transfer( m_showByte);
   // Serial.println(m_showByte+"2"); //for test
-   digitalWrite(ss2, HIGH);
-   SPI.endTransaction(); 
+  // digitalWrite(ss2, HIGH);
+  // SPI.endTransaction(); 
    
 
    // send show to the third slave:
-   SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
-   digitalWrite(ss1, HIGH);
-   digitalWrite(ss2, HIGH);
-   digitalWrite(ss3, LOW);
-   digitalWrite(ss4, HIGH);
+  // SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
+  // digitalWrite(ss1, HIGH);
+  // digitalWrite(ss2, HIGH);
+  // digitalWrite(ss3, LOW);
+  // digitalWrite(ss4, HIGH);
    //digitalWrite(ss5, HIGH);
    
-   SPI.transfer( m_showByte);
+ //  SPI.transfer( m_showByte);
   // Serial.println(m_showByte+"3"); //for test
-   digitalWrite(ss3, HIGH);
-   SPI.endTransaction();
+  // digitalWrite(ss3, HIGH);
+  // SPI.endTransaction();
    
 
 	 // send show to the fourth slave:
-   SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
-   digitalWrite(ss1, HIGH);
-   digitalWrite(ss2, HIGH);
-   digitalWrite(ss3, HIGH);
-   digitalWrite(ss4, LOW);
+  // SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
+  // digitalWrite(ss1, HIGH);
+  // digitalWrite(ss2, HIGH);
+  // digitalWrite(ss3, HIGH);
+  // digitalWrite(ss4, LOW);
    //digitalWrite(ss5, HIGH);
    
-   SPI.transfer( m_showByte );
+   //SPI.transfer( m_showByte );
  //  Serial.println(m_showByte+"4"); //for test
-   digitalWrite(ss4, HIGH);
-   SPI.endTransaction();
+ //  digitalWrite(ss4, HIGH);
+ //  SPI.endTransaction();
 	
 
    // send show to the fifth slave:

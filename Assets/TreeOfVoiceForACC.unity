@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.4465782, g: 0.49641252, b: 0.5748167, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -555,8 +555,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 468306996}
   m_HandleRect: {fileID: 468306995}
   m_Direction: 0
-  m_Value: -0.00000089757583
-  m_Size: 0.915
+  m_Value: 0.00000044878752
+  m_Size: 0.9149999
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2062,7 +2062,7 @@ MonoBehaviour:
   m_AnimationCycle: 390
   m_SimulationDeltaT: 0
   UseActionPlan: 1
-  m_BoidsNum: 5000
+  m_BoidsNum: 2000
   MinBoidRadius: 0.1
   MaxBoidRadius: 0.5
   _minSpeed: 0.5
@@ -2108,10 +2108,9 @@ MonoBehaviour:
   CeilingMaxCorner: {x: 10, y: 10, z: 10}
   GroundRadius: 10
   CeilingRadius: 10
-  CeilingInnerRadius: 0.7
+  m_CeilingInnerRadius: 0.1
   numOfWalls: 2
   m_numOfWallGizmos: 3
-  m_MinDomainRadius: 0.1
   m_MaxDomainRadius: 10
   m_BoidComputeShader: {fileID: 7200000, guid: cd82e75d04265734e8c85ae89b7bdd3c, type: 3}
   gameObjForWallTransforms:
@@ -2160,7 +2159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 181ef20bf4fc57b43a4cb536692ac341, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_portName: COM0
+  m_portName: COM11
   m_LEDArray: 
   m_LEDCount: 0
 --- !u!114 &1304115019
@@ -2189,10 +2188,10 @@ MonoBehaviour:
   m_endingRadiusOfInnerChainThreeTurns: 0.8
   m_startingRadiusOfOuterChain: 1.4
   m_endingRadiusOfOuterChainThreeTurns: 2
-  m_firstChain: 48
-  m_secondChain: 40
-  m_thirdChain: 60
-  m_fourthChain: 52
+  m_firstChain: 30
+  m_secondChain: 44
+  m_thirdChain: 50
+  m_fourthChain: 53
   m_beginFromInChain1: -135
   m_beginFromInChain2: -70
 --- !u!114 &1304115020
@@ -2215,12 +2214,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1304115012}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5e7eb7bb9c79c34d941f17933021942, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_portName: COM0
+  m_portName: COM11
   m_IRDistanceBytes: 
 --- !u!114 &1304115022
 MonoBehaviour:
