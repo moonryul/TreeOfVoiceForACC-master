@@ -167,25 +167,48 @@ public class CommHub : MonoBehaviour
         //In Update call  m_boidsController.SampleColorsAtLEDPoints
         //In Update call ledMasterController.SendLEDData
 
-        if ( m_actionPlanController.loadButton is  null)
+        if (m_actionPlanController.loadButton is null)
         {
             Debug.LogError(" m_loadButton should be defined in actionPlanController.cs");
-             Application.Quit();
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            //UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
+
         }
 
+        else
+        {
+            m_actionPlanController.loadButton.onClick.AddListener(m_actionPlanFileManager.LoadActionPlan);
+
+        }
         if (m_actionPlanController.saveButton is null )
         {
             Debug.LogError(" m_saveButton should be defined in actionPlanController.cs");
-            Application.Quit();
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            // UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
+
+        }
+        else
+        {
+            m_actionPlanController.saveButton.onClick.AddListener(m_actionPlanFileManager.SaveActionPlan);
         }
 
 
+     
 
-        m_actionPlanController.loadButton.onClick.AddListener(m_actionPlanFileManager.LoadActionPlan ) ;
-
-         m_actionPlanController.saveButton.onClick.AddListener( m_actionPlanFileManager.SaveActionPlan) ;
+       
                    
         //debugging
+   
         m_LEDColorGenController.m_LEDSenderHandler += m_LEDMasterController.UpdateLEDArray;
 
 

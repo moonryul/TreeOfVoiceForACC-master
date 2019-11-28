@@ -395,11 +395,23 @@ public class ActionPlanController : MonoBehaviour
         // Get the second child of the canvas:
 
 
-
-        m_scrollViewObj = m_canvasObj.transform.GetChild(0).gameObject;
+        Transform canvas0thChildTransform = m_canvasObj.transform.GetChild(0);
+        if ( canvas0thChildTransform == null)
+        {
+            Debug.LogError("The scrollView  as the first  child canvas should be created ");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            //UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
+        }
+        m_scrollViewObj = canvas0thChildTransform.gameObject;
         // m_scrollViewObj.transform.SetParent(m_canvasObj.transform, false);
 
         // Get the first child of the ScrollView obj,  which is the viewport Obj
+       
         m_viewportObj = m_scrollViewObj.transform.GetChild(0).gameObject;
        // m_viewportObj.transform.SetParent(m_scrollViewObj.transform, false);
 
@@ -1369,7 +1381,7 @@ public class ActionPlanController : MonoBehaviour
            // 1  => the upper hemisphere 
            // 0 => the lower hemisphere
 
-                new Action() { T =  new List<float>{0, 140 }, V = 1  }, // 
+                new Action() { T =  new List<float>{0, 140 }, V = 1  }, 
 
                 new Action() { T = new List<float> {140,230 },  V = 1 },
                     new Action() { T =  new List<float>{230, 300 }, V = 0 },
@@ -1589,8 +1601,23 @@ public  int searchForActionIndex(TimeInterval node, float timePoint)
 
         // Define save Buttons:
         // The first child of Canvas Obj is ScrollView, the second Save Button, and the third Load Button
-        m_saveButtonObj = m_canvasObj.transform.GetChild(1).gameObject;
-
+        Transform canvas1thChildTransform = m_canvasObj.transform.GetChild(1);
+        if (canvas1thChildTransform == null)
+        {
+            Debug.LogError("The save button as the second child canvas should be created ");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            //UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
+        }
+        else
+        {
+            m_saveButtonObj = canvas1thChildTransform.gameObject;
+        }
+        
         // GameObject saveButtonTextObj = saveButtonObj.transform.GetChild(0).gameObject;
 
         //  GameObject saveButtonObj = new GameObject("Action Save Button");
@@ -1693,7 +1720,23 @@ public  int searchForActionIndex(TimeInterval node, float timePoint)
 
         // The first child of Canvas Obj is ScrollView, the second Save Button, and the third Load Button
 
-         m_loadButtonObj = m_canvasObj.transform.GetChild(2).gameObject;
+        Transform canvas2ndChildTransform = m_canvasObj.transform.GetChild(2);
+        if (canvas2ndChildTransform == null)
+        {
+            Debug.LogError("The load button as the thid  child canvas should be created ");
+#if UNITY_EDITOR
+            // Application.Quit() does not work in the editor so
+            //UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
+
+        }
+        else
+        {
+            m_loadButtonObj = canvas2ndChildTransform.gameObject;
+        }
 
         // GameObject loadButtonTextObj = loadButtonObj.transform.GetChild(0).gameObject;
 

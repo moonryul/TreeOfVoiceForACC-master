@@ -162,23 +162,23 @@ public class LEDColorGenController : MonoBehaviour
     private void Awake()
     {// initialize me
 
-        // DEBUG code
-        string fileName = "LEDBoidGen";
+        //// DEBUG code
+        //string fileName = "LEDBoidGen";
 
-        //"yyyy.MM.dd.HH.mm.ss"
-        string fileIndex = System.DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+        ////"yyyy.MM.dd.HH.mm.ss"
+        //string fileIndex = System.DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
 
-        string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
+        //string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
 
 
-        File.CreateText(path).Dispose();
-        //FileStream fileStream = new FileStream(@"file_no.txt",
-        //                               FileMode.OpenOrCreate,
-        //                               FileAccess.ReadWrite,
-        //                               FileShare.None);
+        //File.CreateText(path).Dispose();
+        ////FileStream fileStream = new FileStream(@"file_no.txt",
+        ////                               FileMode.OpenOrCreate,
+        ////                               FileAccess.ReadWrite,
+        ////                               FileShare.None);
 
-        //Write some text to the test.txt file
-         m_writer = new StreamWriter(path, false); // do not append
+        ////Write some text to the test.txt file
+        // m_writer = new StreamWriter(path, false); // do not append
         //m_ioStream = new FileStream(path,
         //                               FileMode.OpenOrCreate,
         //                               FileAccess.ReadWrite,
@@ -214,7 +214,8 @@ public class LEDColorGenController : MonoBehaviour
             Debug.LogError("BoidLEDComputeShader  should be set in the inspector");
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
-            UnityEditor.EditorApplication.isPlaying = false;
+            // UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
 #else
                    Application.Quit();
 #endif
@@ -278,11 +279,12 @@ public class LEDColorGenController : MonoBehaviour
             // Application.Quit();
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
-            UnityEditor.EditorApplication.isPlaying = false;
+          //  UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
 #else
                    Application.Quit();
 #endif
-           
+
         }
 
 
@@ -454,8 +456,8 @@ public class LEDColorGenController : MonoBehaviour
             // m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
              m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX); 
 
-            m_writer.WriteLine(  i+ "th LED POS:" + m_BoidLEDArray[i].Position);
-            m_writer.WriteLine(i + "th LED frame:\n" + m_BoidLEDArray[i].BoidFrame);
+            //m_writer.WriteLine(  i+ "th LED POS:" + m_BoidLEDArray[i].Position);
+            //m_writer.WriteLine(i + "th LED frame:\n" + m_BoidLEDArray[i].BoidFrame);
 
         } // for  (int i )
 
@@ -565,14 +567,14 @@ public class LEDColorGenController : MonoBehaviour
 
             m_BoidLEDArray[m_firstChain + i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX);
 
-            m_writer.WriteLine( (m_firstChain + i) + "th LED POS:" + m_BoidLEDArray[i].Position);
-            m_writer.WriteLine( (m_firstChain + i) + "th LED frame:" + m_BoidLEDArray[i].BoidFrame);
+            //m_writer.WriteLine( (m_firstChain + i) + "th LED POS:" + m_BoidLEDArray[i].Position);
+            //m_writer.WriteLine( (m_firstChain + i) + "th LED frame:" + m_BoidLEDArray[i].BoidFrame);
 
             // Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
 
         } // for  (int i )
 
-        m_writer.Close();
+       // m_writer.Close();
 
 
         //Debug.Log("Fourth Chain:");
@@ -793,18 +795,22 @@ public class LEDColorGenController : MonoBehaviour
 
         Debug.Log("LED Data Send Event Handler called in LEDColorGenController");
 
-        if ( m_LEDSenderHandler is null)
+        if (m_LEDSenderHandler is null)
         {
             Debug.LogError(" Event Handler Methods should be added to m_LEDSenderHandler in CommHub.cs");
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
-            UnityEditor.EditorApplication.isPlaying = false;
+            // UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.Exit(0);
 #else
                    Application.Quit();
 #endif
-           
+
         }
-        m_LEDSenderHandler.Invoke( m_LEDArray) ;
+        else
+        {
+            m_LEDSenderHandler.Invoke(m_LEDArray);
+        }
 
  
      } // Update()
