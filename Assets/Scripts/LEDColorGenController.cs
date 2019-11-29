@@ -125,10 +125,10 @@ public class LEDColorGenController : MonoBehaviour
 
     //cf.  public float CeilingInnerRadius = 0.7f;
 
-    public int m_firstChain = 30;
+    public int m_firstChain = 40;
     public int m_secondChain = 44;
     public int m_thirdChain = 50;
-    public int m_fourthChain = 53;
+    public int m_fourthChain = 52;
 
     public float m_beginFromInChain1 = -135f;
     public float m_beginFromInChain2 = -70f;

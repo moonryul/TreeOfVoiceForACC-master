@@ -8,7 +8,7 @@
 
 //#define SS 10 // uno, sPI pin
 #define SS  53 //mega spi pin
-#define NUMPIXELS1 30 // Number of Pixies in the strip
+#define NUMPIXELS1 40 // Number of Pixies in the strip
 #define PIXIEPIN  5 // Pin number for SoftwareSerial output to the LED chain
 
 SoftwareSerial pixieSerial(-1, PIXIEPIN);
@@ -21,7 +21,10 @@ volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
  
 void setup() {
-  //Serial.begin(115200); // have to send on master in, *slave out*
+  Serial.begin(115200); // have to send on master in, *slave out*
+  for(int i=0; i<bufferSize;i++){
+    buf[i] = 0;
+  }
 
   //Serial1.begin(115200); 
 

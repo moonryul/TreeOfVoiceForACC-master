@@ -23,7 +23,7 @@ volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
  
 void setup() {
-  //Serial.begin(115200);
+  Serial.begin(115200);
  // Serial1.begin(115200);
   // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate

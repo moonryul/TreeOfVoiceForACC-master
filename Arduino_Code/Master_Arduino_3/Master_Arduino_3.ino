@@ -28,11 +28,11 @@ int ss3 = 48; // connect master pin 48 to the third  slave pin 53
 int ss4 = 47; // connect master pin 47 to the fourth slave pin 53
 //int ss5 = 46;
 
-// A total num of LED = 177; each slave processes 40 LEDs
-const int NumPixels1 = 30;
+// A total num of LED = 186; each slave processes 40 LEDs
+const int NumPixels1 = 40;
 const int NumPixles2 = 44;
 const int NumPixels3 = 50;
-const int NumPixels4 = 53;
+const int NumPixels4 = 52;
 
 const int group1ByteSize = NumPixels1 * 3;
 const int group2ByteSize = NumPixles2 * 3;
@@ -40,7 +40,7 @@ const int group3ByteSize = NumPixels3 * 3;
 const int group4ByteSize = NumPixels4 * 3;
 //const int group5ByteSize = 40 * 3;
 
-const int m_totalByteSize = group1ByteSize + group2ByteSize + group3ByteSize + group4ByteSize; // 3 bytes for each of 177 LEDS
+const int m_totalByteSize = group1ByteSize + group2ByteSize + group3ByteSize + group4ByteSize; // 3 bytes for each of 186 LEDS
 
 int m_accumByteCount = 0;
 
@@ -234,7 +234,7 @@ void loop (void) {
   // print the ledBytes to the serial monitor via Serial1.
   printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
 
-  m_accumByteCount = 0;
+ // m_accumByteCount = 0;
 
 }// loop
 
@@ -252,10 +252,6 @@ void loop (void) {
 //https://gamedev.stackexchange.com/questions/32681/random-number-hlsl
 
 //for test LED
-//for (int i = 0; i < totalByteSize/3; i++) {
-//  totalRecieveBuffer[3 * i] = (byte) random(10, 255); // from 10 to 254
-//  totalRecieveBuffer[3 * i +1] = (byte)random(10, 255);
-//  totalRecieveBuffer[3 * i +2] = (byte)random(10, 255);
 
 
 
@@ -359,9 +355,9 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
 void printLEDBytesToSerialMonitor( byte * totalRecieveBuffer,  int m_totalByteSize  )
 {
   //Serial1.println(" read bytes:" + countToRead);
-  for(int i=0; i<m_totalByteSize; i++){
+  for (int i = 0; i < m_totalByteSize; i++) {
     Serial1.println(totalRecieveBuffer[i]);
-  
+
   }
 
 

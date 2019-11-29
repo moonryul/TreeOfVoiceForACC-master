@@ -22,7 +22,7 @@ volatile boolean m_process_it = false;
  
 void setup() 
 {
-  //Serial.begin(9600); // have to send on master in, *slave out*
+  Serial.begin(115200); // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   SPI.begin(); //PB2 - PB4 are converted to SS/, MOSI, MISO, SCK
 
