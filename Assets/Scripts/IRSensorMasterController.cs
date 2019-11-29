@@ -27,6 +27,11 @@ public class IRSensorMasterController : MonoBehaviour
     SerialPort m_serialPort;
 
      public byte[] m_IRDistanceBytes; // 4 bytes for two distances
+
+    int[] m_averageDistances;
+    int m_numBytesToRead;
+    int m_numAccumReadBytes = 0;
+
     float m_Delay;
     public const int m_IRDistanceBytesCount = 4; // 
 
@@ -36,12 +41,17 @@ public class IRSensorMasterController : MonoBehaviour
     //
     //////////////////////////////////
 
-  
 
-    
+     System.Text.StringBuilder m_stringBuilder;
+
 
     void Start()
     {
+        m_stringBuilder = new System.Text.StringBuilder(100); 
+        // 100 = StringBuilder.Capacity Property is used to get or set the maximum number of characters
+        // that can be contained in the memory allocated by the current instance.
+        
+
         // Serial Communication between C# and Arduino
         //http://www.hobbytronics.co.uk/arduino-serial-buffer-size = how to change the buffer size of arduino
         //https://www.codeproject.com/Articles/473828/Arduino-Csharp-and-Serial-Interface
@@ -50,7 +60,12 @@ public class IRSensorMasterController : MonoBehaviour
         //This takes a second or so, and during that time any data that you send is lost.
         //https://forum.arduino.cc/index.php?topic=459847.0
 
+        m_IRDistanceBytes = new byte[m_IRDistanceBytesCount]; // 
 
+
+        m_averageDistances = new int[m_IRDistanceBytesCount / 2]; // two bytes of m_IRDistances form a single distance
+
+        m_numBytesToRead = m_IRDistanceBytes.Length;
         // Set up the serial Port
 
         m_serialPort = new SerialPort(m_portName, 115200); // bit rate= 567000 bps
@@ -69,6 +84,13 @@ public class IRSensorMasterController : MonoBehaviour
         catch (Exception ex)
         {
             Debug.Log("Error:" + ex.ToString()) ;
+//#if UNITY_EDITOR
+//            // Application.Quit() does not work in the editor so
+//             UnityEditor.EditorApplication.isPlaying = false;
+//            //UnityEditor.EditorApplication.Exit(0);
+//#else
+//                   Application.Quit();
+//#endif
         }
 
         //m_SerialToArduinoMgr = new SerialToArduinoMgr();
@@ -155,7 +177,7 @@ public class IRSensorMasterController : MonoBehaviour
         //http://www.csharpstudy.com/CSharp/CSharp-event.aspx
         //https://www.codeproject.com/articles/20550/c-event-implementation-fundamentals-best-practices
 
-        m_IRDistanceBytes = new byte[m_IRDistanceBytesCount]; // 
+     
 
 
         //// define an action
@@ -182,11 +204,14 @@ public class IRSensorMasterController : MonoBehaviour
 
     }
 
-
+   // Serial data is just that: serial - it does not all arrive at once, it arrives byte-by-byte, and pretty slowly compared to modern software.
+   //     If your serial port is running at 9600 baud, then the fastest you can receive data is at about 100 bytes per second.
+   //That means that each byte will most likely generate it's own separate DataReceived event rather than 
+   //     you getting one event for the whole set.
     void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
     {
 
-        SerialPort port = (SerialPort)sender;
+        SerialPort port = (SerialPort)sender; // sender of the Event handler is the source port
 
         //byte[] temp = new byte[port.ReadBufferSize];
 
@@ -260,32 +285,93 @@ public class IRSensorMasterController : MonoBehaviour
         // //public abstract int Read(byte[] buffer, int offset, int count);
 
         // 4096 = SerialPort.ReadBufferSize
-        int numBytesToRead = m_IRDistanceBytes.Length;
-
-       
-        int numBytesRead   = port.Read(m_IRDistanceBytes, 0, numBytesToRead);
         
 
-        Console.WriteLine("number of bytes read: {0:d}", numBytesRead);
-        
-        int[] averageDistances = new int[m_IRDistanceBytesCount / 2]; // two bytes of m_IRDistances form a single distance
+        int count = port.BytesToRead;
 
-        int intForLeftByte0 = m_IRDistanceBytes[0] << 8;
-        int intForRightByte0= m_IRDistanceBytes[1];
+        if ( m_numAccumReadBytes + count <= m_numBytesToRead) 
+        {  // the full number of bytes expected has arrived
+            try
+            {
+                port.Read(m_IRDistanceBytes, 0, count);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Exception occurred during serialPort.Read in IRSensorMasterController.cs:" + ex.ToString());
+//#if UNITY_EDITOR
+//                // Application.Quit() does not work in the editor so
+//                UnityEditor.EditorApplication.isPlaying = false;
+//               // UnityEditor.EditorApplication.Exit(0);
+//#else
+//                   Application.Quit();
+//#endif
+            }
 
-        averageDistances[0] = intForLeftByte0 | intForRightByte0;
+            m_numAccumReadBytes += count;
+        }
+        else
+        { // more than needed has arrived, so only the needed part should be read
+            int countNeeded = m_numBytesToRead - (m_numAccumReadBytes + count);
+            port.Read(m_IRDistanceBytes, 0, countNeeded);
+            m_numAccumReadBytes += countNeeded;
+        } 
 
-        int intForLeftByte1 = m_IRDistanceBytes[2] << 8;
-        int intForRightByte1 = m_IRDistanceBytes[3];
+      
+        //uint == UInt32 struct in c#
+        // C 에서는 uint32_t 가 예약어로 지정된 것이 아니라 stdint.h 라는 표준 헤더에 의해2
+        //typedef int int32_t;
+        //ypedef unsigned int uint32_t;
 
-        averageDistances[1] = intForLeftByte1 | intForRightByte1;
-               
 
-        onAverageSignalReceived.Invoke(averageDistances);
+
+        if ( m_numAccumReadBytes == m_IRDistanceBytesCount)
+        {
+            m_numAccumReadBytes = 0;
+            CompleteAnswerReceived();
+
+        }
+        // string GetString(byte[] bytes);
+        //https://docs.microsoft.com/ko-kr/dotnet/api/system.text.encoding.getstring?view=netframework-4.8
+
+            //string dataAsString = System.Text.Encoding.Default.GetString(m_IRDistanceBytes);
+            //m_stringBuilder.Append (dataAsString);
+
+            //if ( m_stringBuilder.Length == m_IRDistanceBytesCount )
+            //{
+            //    CompleteAnswerReceived();
+            //}
+
+
 
 
     } //     void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
 
 
+    public void CompleteAnswerReceived()
+    {
+        // It is assumed that two integers from four bytes will arrive from the serial port
+        // Convert the four bytes into two integers
+
+        uint intForLeftByte0 = m_IRDistanceBytes[0];
+        intForLeftByte0 = intForLeftByte0 << 8; //이진수의 끝에서 벗어난 비트는 손실된다.
+        uint intForRightByte0 = m_IRDistanceBytes[1];
+
+        m_averageDistances[0] = (int)(intForLeftByte0 | intForRightByte0);
+
+        uint intForLeftByte1 = m_IRDistanceBytes[2];
+        intForLeftByte1 = intForLeftByte1 << 8;
+        uint intForRightByte1 = m_IRDistanceBytes[3];
+
+        m_averageDistances[1] = (int)(intForLeftByte1 | intForRightByte1);
+
+        Debug.Log("the first avg distance=" + m_averageDistances[0]);
+        Debug.Log("the second  avg distance=" + m_averageDistances[1]);
+
+        
+        onAverageSignalReceived.Invoke(m_averageDistances);
+
+
+
+    }
 }//public class IRSensorMasterController 
 

@@ -60,7 +60,7 @@ public class LEDMasterController : MonoBehaviour
 
         // Set up the serial Port
 
-        m_serialPort = new SerialPort(m_portName, 115200); // bit rate= 567000 bps
+        m_serialPort = new SerialPort(m_portName, 115200); // bit rate= 567000 bps = 
 
 
         //m_SerialPort.ReadTimeout = 50;
@@ -75,6 +75,13 @@ public class LEDMasterController : MonoBehaviour
         catch (Exception ex)
         {
             Debug.Log("Error:" + ex.ToString());
+//#if UNITY_EDITOR
+//            // Application.Quit() does not work in the editor so
+//            // UnityEditor.EditorApplication.isPlaying = false;
+//            UnityEditor.EditorApplication.Exit(0);
+//#else
+//                   Application.Quit();
+//#endif
         }
 
 
@@ -85,6 +92,15 @@ public class LEDMasterController : MonoBehaviour
         //m_port = m_SerialToArduinoMgr.port;
     }
 
+    //https://www.codeproject.com/Questions/1178661/How-do-I-receive-a-byte-array-over-the-serial-port
+    //That is most likely because you only read the first byte. 
+    //Serial ports are extremely slow and you need to keep checking whether there is any data ready to read,
+    //you cannot assume that you will get the complete message on your first attempt.
+
+    //int MyInt = 1;
+
+    //byte[] b = BitConverter.GetBytes(MyInt);
+    //serialPort1.Write(b,0,4);
     void Start()
     {
 
@@ -127,16 +143,35 @@ public class LEDMasterController : MonoBehaviour
 
             try
             {
-             
-               // for (int i =0; i < m_LEDArray.Length; i++)
-               // {
-                    //Debug.Log(i + "th byte:" +m_LEDArray[i]);
-               // }
-                m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
+
+                // for (int i =0; i < m_LEDArray.Length; i++)
+                // {
+                //Debug.Log(i + "th byte:" +m_LEDArray[i]);
+                // }
+                //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
+
+
+                //Yes, the Write methods do block , until all data have been passed from the serial port driver to the UART FIFO.
+                //Usually, this is not a problem.It will not block "forever," just for as long as it takes.
+                //For example, if you were to send a 2K byte string, at 9600 bps, the write method would take about 2 seconds to return.
+                //Are you seeing some other operation? Naturally, you must make sure that something else isn't affecting operation,
+                //such as the .Handshake property.  If .Handshake is set to HandshakeRequestToSend or HandshakeRequestToSendXonXoff, 
+                //then CTS must be True in order to send data.  If CTS is not connected, or not asserted, then the Write method may not return.
+
+
+
+              //  m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }
             catch (Exception ex)
             {
                 Debug.Log("Error:" + ex.ToString());
+//#if UNITY_EDITOR
+//                // Application.Quit() does not work in the editor so
+//                // UnityEditor.EditorApplication.isPlaying = false;
+//                UnityEditor.EditorApplication.Exit(0);
+//#else
+//                   Application.Quit();
+//#endif
 
             }
 
@@ -217,6 +252,13 @@ public class LEDMasterController : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.Log(" Exception =" + ex.ToString());
+//#if UNITY_EDITOR
+//                // Application.Quit() does not work in the editor so
+//                // UnityEditor.EditorApplication.isPlaying = false;
+//                UnityEditor.EditorApplication.Exit(0);
+//#else
+//                   Application.Quit();
+//#endif
 
             }
 
@@ -225,18 +267,18 @@ public class LEDMasterController : MonoBehaviour
             // between the unity script and the arduino master, you need to use another serial port
             // to send data from the master arduino to the serial monitor
 
-           //for (int i=0; i < m_LEDCount; i++)
-           // {
-           //     Vector3 color = new Vector3();
+            //for (int i=0; i < m_LEDCount; i++)
+            // {
+            //     Vector3 color = new Vector3();
 
-           //     color[0] = m_LEDArray[3 * i + 0];
-           //     color[1] = m_LEDArray[3 * i + 1];
-           //     color[2] = m_LEDArray[3 * i + 2];
+            //     color[0] = m_LEDArray[3 * i + 0];
+            //     color[1] = m_LEDArray[3 * i + 1];
+            //     color[2] = m_LEDArray[3 * i + 2];
 
-           //     // yooJin: Uncomment the following for debugging
-           //     //Debug.Log(" In UpdateLEDArray: Send: " + i +  "th LED color:" + color);
+            //     // yooJin: Uncomment the following for debugging
+            //     //Debug.Log(" In UpdateLEDArray: Send: " + i +  "th LED color:" + color);
 
-           // }
+            // }
 
 
         }
