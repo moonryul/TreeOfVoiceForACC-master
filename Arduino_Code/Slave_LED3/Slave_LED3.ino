@@ -17,14 +17,18 @@ SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS3, &pixieSerial);
 
 const int bufferSize = NUMPIXELS3 * 3;
-byte showByte = 0; 
-byte buf[bufferSize];
+
+byte bufferA[bufferSize];
+byte bufferB[bufferSize];
+
+byte* receivingPointer = &bufferA[0];
+byte* sendingPointer = &bufferB[0];
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
- 
+
 void setup() {
   Serial.begin(115200);
- // Serial1.begin(115200);
+
   // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   //strip.setBrightness(200);  // Adjust as necessary to avoid blinding
@@ -33,11 +37,11 @@ void setup() {
   // Master In, Slave Out
   pinMode(MISO, OUTPUT);
 
-   // turn on SPI in slave mode
+  // turn on SPI in slave mode
   SPCR |= bit(SPE);
   // SPI통신 레지스터 설정
   //  SPCR |= _BV(SPE);
-    
+
   // get ready for an interrupt
   m_pos = 0;   // buffer empty
   m_process_it = false;
@@ -55,49 +59,55 @@ void setup() {
 
   pinMode(PIXIEPIN, OUTPUT);
 }
- 
- 
+
+
 // SPI interrupt routine
 ISR (SPI_STC_vect) {
 
   byte c = SPDR;  // grab byte from SPI Data Register
 
-//  if( c == 0 ){
-//	  m_process_it = true;
-//    Serial1.println("show command");
-//    }
-//  else if( m_pos < sizeof(buf)){
-//    buf[ m_pos++ ]=c;  
-//  }
-    if ( m_pos < bufferSize ) 
-    {
-      buf[ m_pos++ ]=c;  
-      if( m_pos == bufferSize )
-      {
- 
-          m_process_it = true;
-          m_pos =0;
-      }
-    }// if
+  //  if( c == 0 ){
+  //	  m_process_it = true;
+  //    Serial1.println("show command");
+  //    }
+  //  else if( m_pos < sizeof(buf)){
+  //    buf[ m_pos++ ]=c;
+  //  }
+
+  receivingPointer[ m_pos++ ] = c; // recevingPointer points to bufferA initially
+
+  if ( m_pos == bufferSize )
+  { // the receiving buffer is full
+
+    // change the receivingPointer to the other buffer
+    receivingPointer = &bufferB[0];
+    // change the sendingPointer to the other buffer
+    sendingPointer  = &bufferA[0];
+
+    m_pos = 0;
+    m_process_it = true;
+
+
+  } //if ( m_pos == bufferSize )
 } // Interrupt
- 
+
 void loop() {
 
-  if(m_process_it){
+  if (m_process_it) {
 
-	// SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0)); // disable interrupt
-    for(int i=0; i<NUMPIXELS3; i++) { 
-      strip.setPixelColor (i, buf[i*3+0], buf[i*3+1], buf[i*3+2] );
+    // SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0)); // disable interrupt
+    for (int i = 0; i < NUMPIXELS3; i++) {
+      strip.setPixelColor (i, sendingPointer[i * 3 + 0], sendingPointer[i * 3 + 1], sendingPointer[i * 3 + 2] );
       //Serial1.println( buf[i*3+0]);
-     // Serial1.println( buf[i*3+1]);
-     // Serial1.println( buf[i*3+2]);
+      // Serial1.println( buf[i*3+1]);
+      // Serial1.println( buf[i*3+2]);
 
-      }
+    }
 
-	strip.show(); // show command has been  recieved
-	//m_pos = 0;
-	m_process_it = false;
-	//SPI.endTransaction();// // enable interrupt
-  } 
-  
+    strip.show(); // show command has been  recieved
+    //m_pos = 0;
+    m_process_it = false;
+    //SPI.endTransaction();// // enable interrupt
+  }
+
 }

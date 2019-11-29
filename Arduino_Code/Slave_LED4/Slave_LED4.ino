@@ -17,8 +17,11 @@ SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS4, &pixieSerial);
 
 const int bufferSize = NUMPIXELS4 * 3;
-byte showByte = 0;
-byte buf[bufferSize];
+byte bufferA[bufferSize];
+byte bufferB[bufferSize];
+
+byte* receivingPointer = &bufferA[0];
+byte* sendingPointer = &bufferB[0];
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
  
@@ -68,16 +71,22 @@ ISR (SPI_STC_vect) {
 //    buf[ m_pos++ ]=c;  
 //  }
 //  
- if ( m_pos < bufferSize ) 
-    {
-      buf[ m_pos++ ]=c;  
-      if( m_pos == bufferSize )
-      {
- 
-          m_process_it = true;
-          m_pos =0;
-      }
-    }// if
+
+  receivingPointer[ m_pos++ ] = c; // recevingPointer points to bufferA initially
+
+  if ( m_pos == bufferSize ) 
+  { // the receiving buffer is full
+   
+    // change the receivingPointer to the other buffer
+    receivingPointer = &bufferB[0];
+    // change the sendingPointer to the other buffer
+    sendingPointer  = &bufferA[0];
+    
+    m_pos =0;
+    m_process_it = true;
+  
+
+ } //if ( m_pos == bufferSize )
 }
  
 void loop() {
@@ -87,7 +96,7 @@ void loop() {
 	// SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0)); // disable interrupt
 
     for(int i=0; i<NUMPIXELS4; i++) { //NUMPIXELS
-      strip.setPixelColor (i, buf[i*3+0], buf[i*3+1], buf[i*3+2] );
+      strip.setPixelColor(i, sendingPointer[i * 3 + 0], sendingPointer[i * 3 + 1], sendingPointer[i * 3 + 2]);
 
       //Serial1.println( buf[i*3+0]);
       //Serial1.println( buf[i*3+1]);
