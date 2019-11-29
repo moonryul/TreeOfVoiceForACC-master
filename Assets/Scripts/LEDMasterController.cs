@@ -128,10 +128,7 @@ public class LEDMasterController : MonoBehaviour
 
         // prepare test led array
         
-        m_LEDArray[0] = 255;
-        m_LEDArray[1] = 0;
-        m_LEDArray[2] = 0;
-
+      
         int m_index = 0;
 
         // define an action
@@ -160,7 +157,7 @@ public class LEDMasterController : MonoBehaviour
 
 
 
-              //  m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
+                m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }
             catch (Exception ex)
             {
@@ -183,9 +180,9 @@ public class LEDMasterController : MonoBehaviour
         
        
        m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
-      // Thread state = unstarted
-  
-    }
+                                                                // Thread state = unstarted
+
+    }// void Start()
 
 
     public void UpdateLEDArray(byte[] ledArray)
@@ -220,23 +217,23 @@ public class LEDMasterController : MonoBehaviour
                 
                 Debug.Log(" send LED array to arduino");
 
-                //for (int i = 0; i < m_LEDCount; i++)
-                //{
-                //    ledArray[3 * i] = 0;
-                //    ledArray[3 * i + 1] = 0;
-                //    ledArray[3 * i + 2] = 0;
+                for (int i = 0; i < m_LEDCount; i++)
+                {
+                    ledArray[3 * i] = 0;
+                    ledArray[3 * i + 1] = 0;
+                    ledArray[3 * i + 2] = 0;
 
-                //}
+                }
 
-                //ledArray[3 * m_index + 0] = 255;
-                //ledArray[3 * m_index + 1] = 0;
-                //ledArray[3 * m_index + 2] = 0;
+                ledArray[3 * m_index + 0] = 255;
+                ledArray[3 * m_index + 1] = 0;
+                ledArray[3 * m_index + 2] = 0;
 
-                //m_index++;
-                //if (m_index == m_LEDCount)
-                //{
-                //    m_index = 0; // wrap the index
-                //}
+                m_index++;
+                if (m_index == m_LEDCount)
+                {
+                    m_index = 0; // wrap the index
+                }
 
                 m_LEDArray = ledArray;
 
