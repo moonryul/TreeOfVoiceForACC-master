@@ -22,6 +22,8 @@ byte bufferB[bufferSize];
 byte* receivingPointer = &bufferA[0];
 byte* sendingPointer = &bufferB[0];
 
+byte* interMediatePointer;
+
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
  
@@ -86,9 +88,16 @@ ISR (SPI_STC_vect) {
   { // the receiving buffer is full
    
     // change the receivingPointer to the other buffer
-    receivingPointer = &bufferB[0];
+    //receivingPointer = &bufferB[0];
+    interMediatePointer = receivingPointer;
+    receivingPointer = sendingPointer;
+
+    sendingPointer = interMediatePointer;
+    
+    //receivingPointer = &bufferB[0]
+    
     // change the sendingPointer to the other buffer
-    sendingPointer  = &bufferA[0];
+    //sendingPointer  = &bufferA[0];
     
     m_pos =0;
     m_process_it = true;

@@ -62,30 +62,7 @@ ISR (SPI_STC_vect) {
 
   byte c = SPDR;  // grab byte from SPI Data Register
 
-  // commented out by Moon
-  //if( c == 0 ){
-  //    showByte = 0;
-  //    Serial.println("show command");
-  //    }
-  //  else if( m_pos < sizeof(buf)){
-  //    buf[ m_pos++ ]=c;
-  //  }
-  //  else if( m_pos ==  sizeof(buf) ){
-  //    m_process_it = true;
-  //  }
-  //}
-
-  // replace the above by the following
-
-  //if( c == 0 )
-  // {
-  //	m_process_it = true;
-  //    Serial1.println("show command");
-  // }
-  // else if( m_pos < sizeof(buf))
-  //  {
-  //    buf[ m_pos++ ]=c;
-  //  }
+  
 
   receivingPointer[ m_pos++ ] = c; // recevingPointer points to bufferA initially
 
