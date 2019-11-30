@@ -259,7 +259,7 @@ void loop (void) {
 
   // print the ledBytes to the serial monitor via Serial1.
   
-  //printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
+  printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
 
 
   m_accumByteCount = 0;
@@ -267,6 +267,7 @@ void loop (void) {
 
 
  // now  m_accumByteCount < m_totalBytesSize; continue to read the serial buffer
+ return;
 
 }// loop
 
@@ -369,13 +370,13 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
 } //  sendLEDBytesToSlaves(totalRecieveBuffer,  m_totalByteSize )
 
 
-void printLEDBytesToSerialMonitor( byte * totalRecieveBuffer,  int m_totalByteSize  )
+void printLEDBytesToSerialMonitor( byte * totalRecieveBuffer,  int totalByteSize  )
 {
   //Serial1.println(" read bytes:" + countToRead);
 
   
 
-  for (int i = 0; i < m_totalByteSize; i++) {
+  for (int i = 0; i < totalByteSize; i++) {
 
     Serial1.write(totalRecieveBuffer[i]);
 
