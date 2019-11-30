@@ -60,7 +60,7 @@ public class LEDMasterController : MonoBehaviour
 
         // Set up the serial Port
 
-        m_serialPort = new SerialPort(m_portName, 115200); // bit rate= 567000 bps = 
+        m_serialPort = new SerialPort(m_portName, 9600); // bit rate= 567000 bps = 
 
 
         //m_SerialPort.ReadTimeout = 50;
@@ -236,9 +236,9 @@ public class LEDMasterController : MonoBehaviour
                 //}
                 for (int i = 0; i < m_LEDCount; i++)
                 {
-                    m_LEDArray[3 * i] = 0;
-                    m_LEDArray[3 * i + 1] = 0;
-                    m_LEDArray[3 * i + 2] = 0;
+                    m_LEDArray[3 * i] = 1;
+                    m_LEDArray[3 * i + 1] = 2;
+                    m_LEDArray[3 * i + 2] = 3;
 
                 }
                // m_LEDArray = ledArray;

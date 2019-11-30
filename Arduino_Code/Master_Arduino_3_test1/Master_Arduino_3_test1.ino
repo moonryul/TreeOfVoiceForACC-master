@@ -130,7 +130,6 @@ void setup (void) {
 
 void loop (void) {
   //https://arduino.stackexchange.com/questions/1726/how-does-the-arduino-handle-serial-buffer-overflow
-  Serial1.write(m_totalRecieveBuffer,m_totalByteSize);
 
   // If Serial.read() == -1, it means that head == tail, i.e. there are no bytes to read, that is, underflow happened
 

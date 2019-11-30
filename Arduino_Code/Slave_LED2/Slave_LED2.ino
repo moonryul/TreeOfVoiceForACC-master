@@ -20,12 +20,14 @@ byte bufferB[bufferSize];
 
 byte* receivingPointer = &bufferA[0];
 byte* sendingPointer = &bufferB[0];
+byte* interMediatePointer;
+
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
 
 void setup()
 {
-  Serial.begin(115200); // have to send on master in, *slave out*
+  //Serial.begin(115200); // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   SPI.begin(); //PB2 - PB4 are converted to SS/, MOSI, MISO, SCK
 
@@ -62,23 +64,24 @@ ISR (SPI_STC_vect) {
 
   byte c = SPDR;  // grab byte from SPI Data Register
 
-  
+
 
   receivingPointer[ m_pos++ ] = c; // recevingPointer points to bufferA initially
 
-  if ( m_pos == bufferSize ) 
+  if ( m_pos == bufferSize )
   { // the receiving buffer is full
-   
-    // change the receivingPointer to the other buffer
-    receivingPointer = &bufferB[0];
-    // change the sendingPointer to the other buffer
-    sendingPointer  = &bufferA[0];
-    
-    m_pos =0;
-    m_process_it = true;
-  
 
- } //if ( m_pos == bufferSize )
+    // change the receivingPointer to the other buffer
+    interMediatePointer = receivingPointer;
+    receivingPointer = sendingPointer;
+
+    sendingPointer = interMediatePointer;
+
+    m_pos = 0;
+    m_process_it = true;
+
+
+  } //if ( m_pos == bufferSize )
 
 } // ISR (SPI_STC_vect)
 
@@ -92,7 +95,7 @@ void loop()
     //SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0)); // disable interrupt
     for (int i = 0; i < NUMPIXELS2; i++)
     {
-      strip.setPixelColor (i, sendingPointer[i * 3 + 0], sendingPointer[i * 3 + 1], sendingPointer[i * 3 + 2] );
+      strip.setPixelColor(i, *(sendingPointer + i * 3 + 0), *(sendingPointer + i * 3 + 1), *(sendingPointer + i * 3 + 2) );
       ///  Serial1.println( buf[i*3+0]);
       //   Serial1.println( buf[i*3+1]);
       //   Serial1.println( buf[i*3+2]);
@@ -101,7 +104,7 @@ void loop()
     strip.show(); // show command has been  recieved => update the LED colors in the chain
     //	m_pos = 0;
     m_process_it = false;
-
+    delay(5);
     //SPI.endTransaction();// // enable interrupt
 
   } // if( m_process_it )

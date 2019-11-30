@@ -15,7 +15,7 @@ void setup() {
   Serial.begin(9600);
   // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
-  strip.setBrightness(200);  // Adjust as necessary to avoid blinding
+  //strip.setBrightness(200);  // Adjust as necessary to avoid blinding
   pinMode(MISO, OUTPUT);
   // turn on SPI in slave mode
   
@@ -49,8 +49,12 @@ void loop() {
   if(process_it){
     for(int i=0; i<NUMPIXELS; i++) { //NUMPIXELS
       strip.setPixelColor(i, buf[i*3+0], buf[i*3+1], buf[i*3+2]);
-      Serial.println(buf[i*3+0]);
-      Serial.println(buf[i*3+1]);
+      Serial.print(i);
+      Serial.print("  r : ");
+      Serial.print(buf[i*3+0]);
+      Serial.print("   g : ");
+      Serial.print(buf[i*3+1]);
+      Serial.print("   b : ");
       Serial.println(buf[i*3+2]);
       }
     strip.show();

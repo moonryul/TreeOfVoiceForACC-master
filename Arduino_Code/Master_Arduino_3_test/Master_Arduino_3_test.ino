@@ -22,7 +22,7 @@
 #include <SPI.h>
 
 // The built-in pin number of the slave, which is used within SPI.Begin()
-int ss1 = 53; // connect master pin 53 the first slave pin 53
+int ss1 = 37; // connect master pin 53 the first slave pin 53
 int ss2 = 49; // connect master pin 49 to the second slave pin 53
 int ss3 = 48; // connect master pin 48 to the third  slave pin 53
 int ss4 = 47; // connect master pin 47 to the fourth slave pin 53
@@ -58,6 +58,7 @@ int m_currentIndex = 0;
 
 void setup (void) {
   // set the Slave Select Pins as outputs:
+  Serial.begin(115200);
   pinMode(ss1, OUTPUT);
   pinMode(ss2, OUTPUT);
   pinMode(ss3, OUTPUT);
@@ -85,7 +86,7 @@ void setup (void) {
   // SPI.setBitOrder(MSBFIRST);
 
   //Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
-  Serial.begin(115200); // To read bytes from the PC Unity Script
+ // Serial.begin(115200); // To read bytes from the PC Unity Script
 
   //Define another serial port:
   //https://www.arduino.cc/reference/en/language/functions/communication/serial/
@@ -97,7 +98,7 @@ void setup (void) {
   // USB port in the PC to Pin 19 and 18; Also open another arduino IDE for the second serial port, Serial1.
   // Use the first arduino IDE to upload the arduino code, and use the second arduino IDE to report messages.
 
-  Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
+ // Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
 
 }
 
@@ -131,15 +132,15 @@ void setup (void) {
 void loop (void) {
 
   for (int i = 0; i < m_totalByteSize / 3; i++) {
-    m_totalRecieveBuffer[3 * i] = 0; // from 10 to 254
-    m_totalRecieveBuffer[3 * i + 1] = 0;
-    m_totalRecieveBuffer[3 * i + 2] = 0;
+    m_totalRecieveBuffer[3 * i] = 255; // from 10 to 254
+    m_totalRecieveBuffer[3 * i +1] = 0;
+    m_totalRecieveBuffer[3 * i +2] = 0;
 
   }
 
 
-  sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
-
+  sendLEDBytesToSlaves( &m_totalRecieveBuffer[0],  m_totalByteSize );
+  printLEDBytesToSerialMonitor( &m_totalRecieveBuffer[0],  m_totalByteSize );
 
 
 }// loop
@@ -194,75 +195,46 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
 
 
 
-  digitalWrite(ss1, LOW); // select the first SS line
+  digitalWrite(SS, LOW); // select the first SS line
   digitalWrite(ss2, HIGH);
   digitalWrite(ss3, HIGH);
   digitalWrite(ss4, HIGH);
   //digitalWrite(ss5, HIGH);
 
-  SPI.transfer( &totalRecieveBuffer[0], group1ByteSize);
-  digitalWrite(ss1, HIGH);
-
-  SPI.endTransaction();
-
-  // send the second group of data to the second slave:
-  SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer( totalRecieveBuffer, group1ByteSize);
 
   digitalWrite(ss1, HIGH);
-  digitalWrite(ss2, LOW); // select the second SS Line
-  digitalWrite(ss3, HIGH);
-  digitalWrite(ss4, HIGH);
-  //digitalWrite(ss5, HIGH);
-
-  SPI.transfer( &totalRecieveBuffer[group1ByteSize], group2ByteSize);
-  digitalWrite(ss2, HIGH);
-
-  SPI.endTransaction();
-
-  // send the third group of data to the third slave:
-  SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
-
-  digitalWrite(ss1, HIGH);
-  digitalWrite(ss2, HIGH);
-  digitalWrite(ss3, LOW); // select the third SS line
-  digitalWrite(ss4, HIGH);
-  //digitalWrite(ss5, HIGH);
-
-  SPI.transfer( &totalRecieveBuffer[group1ByteSize + group2ByteSize], group3ByteSize);
-  digitalWrite(ss3, HIGH);
-
-  SPI.endTransaction();
-
-  // send the fourth group of data to the fourth slave:
-  //On Mega, default speed is 4 MHz (SPI clock divisor at 4). Max is 8 MHz (SPI clock divisor at 2).
-  SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
-
-  digitalWrite(ss1, HIGH);
-  digitalWrite(ss2, HIGH);
-  digitalWrite(ss3, HIGH);
-  digitalWrite(ss4, LOW);   // select the fourth SS line
-  //digitalWrite(ss5, HIGH);
-
-  SPI.transfer( &totalRecieveBuffer[group1ByteSize + group2ByteSize  + group3ByteSize ], group4ByteSize);
-  digitalWrite(ss4, HIGH);
-
-  SPI.endTransaction();
-
+ 
+  delay(10);
+  
 
   // If other libraries use SPI from interrupts,
   // they will be prevented from accessing SPI until you call SPI.endTransaction().
 
 
   // delay (10); // delay between LED activation; at least 1 ms
-  delay(2);
+  
 } //  sendLEDBytesToSlaves(totalRecieveBuffer,  m_totalByteSize )
 
 
 void printLEDBytesToSerialMonitor( byte * totalRecieveBuffer,  int m_totalByteSize  )
 {
+  int indexCount=0;
   //Serial1.println(" read bytes:" + countToRead);
   for (int i = 0; i < m_totalByteSize; i++) {
-    Serial1.println(totalRecieveBuffer[i]);
+    if(i % 3 ==0){
+      Serial.print(indexCount);
+      Serial.print(" :  ");
+      Serial.print(" r     :");
+      Serial.print(totalRecieveBuffer[i]);
+    }else if(i% 3 ==1){
+      Serial.print(" g     :");
+      Serial.print(totalRecieveBuffer[i]);
+    }else if(i% 3 ==2){
+      Serial.print(" b     :");
+      Serial.println(totalRecieveBuffer[i]);
+      indexCount++;
+    }
 
   }
 
