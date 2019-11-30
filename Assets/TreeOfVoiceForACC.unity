@@ -555,7 +555,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 468306996}
   m_HandleRect: {fileID: 468306995}
   m_Direction: 0
-  m_Value: 0.00000044878752
+  m_Value: 0.00000089757503
   m_Size: 0.9149999
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -2188,10 +2188,10 @@ MonoBehaviour:
   m_endingRadiusOfInnerChainThreeTurns: 0.8
   m_startingRadiusOfOuterChain: 1.4
   m_endingRadiusOfOuterChainThreeTurns: 2
-  m_firstChain: 30
+  m_firstChain: 40
   m_secondChain: 44
   m_thirdChain: 50
-  m_fourthChain: 53
+  m_fourthChain: 52
   m_beginFromInChain1: -135
   m_beginFromInChain2: -70
 --- !u!114 &1304115020

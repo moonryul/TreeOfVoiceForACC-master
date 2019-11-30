@@ -28,7 +28,7 @@ volatile boolean m_process_it = false;
 
 void setup() {
   Serial.begin(115200);
-  // Serial1.begin(115200);
+
   // have to send on master in, *slave out*
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   //strip.setBrightness(200);  // Adjust as necessary to avoid blinding

@@ -49,6 +49,9 @@ byte m_codonBytes[3]; // an array of three bytes to hold to check if they are th
 //so the compiler will always read the physical register.
 //cf: https://hackaday.com/2015/08/18/embed-with-elliot-the-volatile-keyword/
 
+byte* interMediatePointer;
+
+
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
 
@@ -58,7 +61,10 @@ void setup() {
   
   //Serial.begin(115200); // for debugging
 
+
   //Serial1.begin(115200); // for debugging
+
+ 
 
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
   
@@ -129,6 +135,7 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
 // move the current byte c to the receiving buffer
   receivingPointer[ m_pos ] = c; // recevingPointer points to bufferA initially
 
+
 // There are three cases:
 
 if ( m_pos <2 )  // before the start bytes
@@ -139,7 +146,7 @@ if ( m_pos <2 )  // before the start bytes
 }
 else 
   if ( m_pos == 2)  // at the start bytes
-  
+
   { //  three bytes are received into receving buffer; check if they are m_startBytes
 
     if ( receivingPointer[m_pos-2] == m_startBytes[0] &&  receivingPointer[m_pos-1] == m_startBytes[1]
