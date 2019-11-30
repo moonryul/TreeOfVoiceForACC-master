@@ -1,4 +1,5 @@
 /////////////////////////////////////////////////////////
+//SPI Tutorial: https://learn.sparkfun.com/tutorials/serial-peripheral-interface-spi/all
 // https://forum.arduino.cc/index.php?topic=558963.0
 // Arduino UNO
 // 10 (SS)
@@ -28,7 +29,7 @@ const int ss3 = 48; // connect master pin 48 to the third  slave pin 53
 const int ss4 = 47; // connect master pin 47 to the fourth slave pin 53
 //int ss5 = 46;
 
-// A total num of LED = 177; each slave processes 40 LEDs
+// A total num of LED = 186; each slave processes 40 LEDs
 const int NumPixels1 = 30;
 const int NumPixles2 = 44;
 const int NumPixels3 = 50;
@@ -52,7 +53,9 @@ byte m_totalRecieveBuffer[m_totalByteSize];
 // SERIAL_RX_BUFFER_SIZE == 64;
 // defined in C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\HardWareSerial.h
 
-byte m_showByte = 0;
+byte m_startBytes[3]  = {0,0,0}; // This full black color indicates the start of a single frame of LEDs.
+byte m_endBytes[3]  = {255,255,255}; // This full white color indicates the end a single frame of LEDs. 
+
 
 SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
 SPISettings SPISettingB (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 2
@@ -66,7 +69,10 @@ SPISettings SPISettingD (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 
   //Arduino will automatically use the best speed that is equal to or less than the number you use with SPISettings.
   
  //On Mega, default speed is 4 MHz (SPI clock divisor at 4). Max is 8 MHz (SPI clock divisor at 2).
- 
+ //SPI can operate at extremely high speeds (millions of bytes per second), which may be too fast for some devices. 
+ //To accommodate such devices, you can adjust the data rate. 
+ //In the Arduino SPI library, the speed is set by the setClockDivider() function,  
+//which divides the master clock (16MHz on most Arduinos) down to a frequency between 8MHz (/2) and 125kHz (/128).
   //https://www.dorkbotpdx.org/blog/paul/spi_transactions_in_arduino
   //The clock speed you give to SPISettings is the maximum speed your SPI device can use,
   //not the actual speed your Arduino compatible board can create.
@@ -194,28 +200,21 @@ void loop (void) {
 
     // transfer from receiveBuffer to totalReceiveBuffer
 
-    for (int i = 0; i < availCount; i++ )
+    for (int i = 0; i < readCount; i++ )
     {
       m_totalRecieveBuffer[m_accumByteCount + i] = m_recieveBuffer[i];
     }
     //update the current accumulatedByteCount
-    m_accumByteCount = m_accumByteCount + availCount;
+    m_accumByteCount = m_accumByteCount + readCount;
 
   }//if (  (m_accumByteCount + availCount) < m_totalByteSize)
 
   // read count bytes from the tail of the buffer; head == tail when the buffer is empty or full
 
   // readCount < countToRead  means that timeout has happened.  the 1 s of timeout seems enough to read that.
-  // It is assumed that there arises no timeout while trying to read availCount, because that amount of
-  // bytes is already in the input ring buffer.
+  // It is likely that there arises no timeout while trying to read availCount, because that amount of
+  // bytes is already in the input ring buffer. But who knows?
 
-
-  // report the read bytes to the serial monitor
-  //  size_t println(const char[]);
-  //		Serial1.println(" read bytes:" + availCount);
-  //		for (int i = 0; i < availCount; i++) {
-  //			Serial1.println( totalRecieveBuffer[m_accumByteCount + i] );
-  //		}
 
 
   if ((m_accumByteCount + availCount) >= m_totalByteSize) {
@@ -229,32 +228,28 @@ void loop (void) {
 
     int readCount = Serial.readBytes(m_recieveBuffer, countToRead); // read count bytes from the tail of the buffer; head == tail when the buffer is empty or full
 
+
+    // readCount < countToRead  means that timeout has happened.  the 1 s of timeout seems enough.
+    // But who knows?
+    
     // transfer from receiveBuffer to totalReceiveBuffer
 
-    for (int i = 0; i <  countToRead; i++ )
+    for (int i = 0; i <  readCount; i++ )
     {
       m_totalRecieveBuffer[m_accumByteCount + i] = m_recieveBuffer[i];
     }
     //update the current accumulatedByteCount
-    m_accumByteCount = m_accumByteCount +  countToRead;
+    m_accumByteCount = m_accumByteCount +  readCount;
 
-    // readCount < countToRead  means that timeout has happened.  the 1 s of timeout seems enough. So it is assumed that
-    // timeout does not occur:
-
-
-
-    //		Serial1.println(" read bytes:" + countToRead);
-    //		for (int i = 0; i < countToRead; i++) {
-    //		Serial1.println(totalRecieveBuffer[m_accumByteCount + i]);
-    //		}
 
   }//if ((m_accumByteCount + availCount) >= m_totalByteSize)
 
-  //
-  // Now  the m_totalByteSize of bytes is equal to the totalByteSize;
-  // So  send the read bytes to  the slaves via SPI communications.
+  
+  // Now  m_accumByteCount may be equal to  m_totalByteSize. Then
+  // Send the read bytes to  the slaves via SPI communications.
 
-
+  if ( m_accumByteCount == m_totalBytesSize ) 
+  {
   sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
 
   // print the ledBytes to the serial monitor via Serial1.
@@ -262,16 +257,11 @@ void loop (void) {
   //printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
 
   m_accumByteCount = 0;
+  }
+
+ // now  m_accumByteCount < m_totalBytesSize; continue to read the serial buffer
 
 }// loop
-
-
-// write back the received bytes for further testing:
-// Serial.write(totalRecieveBuffer, totalByteSize);
-//If the transmit buffer is full then Serial.write() will block until there is enough space in the buffer.
-//To avoid blocking calls to Serial.write(), you can first check the amount of free space in the transmit buffer using availableForWrite().
-
-
 
 
 
@@ -307,7 +297,13 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   digitalWrite(ss4, HIGH);
   //digitalWrite(ss5, HIGH);
 
+  // To send  a sequence of bytes to a slave arduiono via SPI, mark the start and the end
+  // of the sequence with special bytes, m_startByte and m_endByte respectivley. 
+   SPI.transfer( m_startBytes, 3);
+   
   SPI.transfer( &totalRecieveBuffer[0], group1ByteSize);
+
+  SPI.transfer( m_endBytes, 3);
   digitalWrite(ss1, HIGH);
 
   SPI.endTransaction();
@@ -321,7 +317,11 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   digitalWrite(ss4, HIGH);
   //digitalWrite(ss5, HIGH);
 
+  SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalRecieveBuffer[group1ByteSize], group2ByteSize);
+  
+  SPI.transfer( m_endBytes, 3);
+  
   digitalWrite(ss2, HIGH);
 
   SPI.endTransaction();
@@ -335,7 +335,10 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   digitalWrite(ss4, HIGH);
   //digitalWrite(ss5, HIGH);
 
+ SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalRecieveBuffer[group1ByteSize + group2ByteSize], group3ByteSize);
+    SPI.transfer( m_endBytes, 3);
+    
   digitalWrite(ss3, HIGH);
 
   SPI.endTransaction();
@@ -350,7 +353,9 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   digitalWrite(ss4, LOW);   // select the fourth SS line
   //digitalWrite(ss5, HIGH);
 
+ SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalRecieveBuffer[group1ByteSize + group2ByteSize  + group3ByteSize ], group4ByteSize);
+      SPI.transfer( m_endBytes, 3);
   digitalWrite(ss4, HIGH);
 
   SPI.endTransaction();
@@ -367,6 +372,7 @@ void printLEDBytesToSerialMonitor( byte * totalRecieveBuffer,  int m_totalByteSi
 {
   //Serial1.println(" read bytes:" + countToRead);
   for(int i=0; i<m_totalByteSize; i++){
+    
     Serial1.println(totalRecieveBuffer[i]);
   
   }

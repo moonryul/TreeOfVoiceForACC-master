@@ -15,13 +15,19 @@
 SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS1, &pixieSerial);
 
-const int bufferSize = NUMPIXELS1 * 3; 
+const int bufferSize = (NUMPIXELS1 + 2) * 3; // 6 bytes are for the start and end bytes 
 
 byte bufferA[bufferSize];
 byte bufferB[bufferSize];
 
 byte* receivingPointer = &bufferA[0];
 byte* sendingPointer = &bufferB[0];
+
+
+byte m_startBytes[3]  = {0,0,0}; // This full black color indicates the start of a single frame of LEDs.
+byte m_endBytes[3]  = {255,255,255}; // This full white color indicates the end a single frame of LEDs. 
+
+byte m_codonBytes[3]; // an array of three bytes to hold to check if they are the start or end bytes.
 
 //I read the Arduino reference page and understand it's used for values that might change 
 //and often used with interrupts, it's pulled from the RAM and not the storage register, 
@@ -108,7 +114,8 @@ void setup() {
 //}
 // SPI interrupt routine
 ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
-  byte c = SPDR;  // grab byte from SPI Data Register
+
+ byte c = SPDR;  // grab byte from SPI Data Register
 
   //  get the byte into the buffer pointed by receivingPointer
   //buf[ m_pos++ ]=c;	
@@ -119,35 +126,100 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
    // m_pos =0;
   //  }//if
 
-  receivingPointer[ m_pos++ ] = c; // recevingPointer points to bufferA initially
+// move the current byte c to the receiving buffer
+  receivingPointer[ m_pos ] = c; // recevingPointer points to bufferA initially
 
-  if ( m_pos == bufferSize )// the receiving buffer is full 
-  { 
-    if ( m_process_it == false ) 
-    { // the sending buffer is not being read by loop()  => the receiving buffer will be read by loop()
-    // Otherwise, the interrupt routine will refill the receiving buffer again from the beginning
+// There are three cases:
 
-    
-     m_pos =0;
-     m_process_it = true;
-    
-    // change the receivingPointer to the other buffer
-     receivingPointer = &bufferB[0];
-    // change the sendingPointer to the other buffer
-     sendingPointer  = &bufferA[0];
-   
-    }
+if ( m_pos <2 )  // before the start bytes
+{
+    m_pos ++;
+    return;
+           
+}
+else 
+  if ( m_pos == 2)  // at the start bytes
+  
+  { //  three bytes are received into receving buffer; check if they are m_startBytes
+
+    if ( receivingPointer[m_pos-2] == m_startBytes[0] &&  receivingPointer[m_pos-1] == m_startBytes[1]
+         &&  receivingPointer[m_pos] == m_startBytes[2] )
+         {
+           // a new led frame starts; go on
+           m_pos ++;
+           return;
+           
+         }
     else 
-    { // m_process_it is true =>  the sending buffer is being read by loop()
-    // => the interrupt routine will refill the receiving buffer again from the beginning
- 
-      m_pos =0;
+        { the first three bytes are not start bytes; Then continue to read, but with m_pos set to 0
+          m_pos = 0;
+          return;
+        }     
+    } // else
+  } // at the start bytes
+
+  else // after the startBytes; m_pos >=3
+  {
+    // the buffer is full or  not
+   if ( m_pos == bufferSize - 1 )// the receiving buffer is full; that is,  NUMPIXELS1 * 3 bytes are received. 
+   { 
+    // check if the last three bytes are m_endBytes; otherwise, the received data is corrupt and should be discarded
+
+    if (  receivingPointer[m_pos-2] == m_endBytes[0] &&  receivingPointer[m_pos-1] == m_endBytes[1]
+         &&  receivingPointer[m_pos] == m_endBytes[2] )
+         
+       { // the endBytes are received, and the data received is considered valid.
+
+         // check if the data received can be captured by loop() 
+          if ( m_process_it == false ) 
+          
+           { // m_process_it = true means that loop() is reading the sending buffer;
+             // m_process_it = false means that we can make the fully filled receiving buffer the new sending buffer
+             // from which loop() can read the bytes and send to the PIXIE chain
+       
+             // (Otherwise, the interrupt routine will refill the receiving buffer again from the beginning as indicated by 
+             // the else clause below.
+
     
-    }
+             m_pos =0;
+             m_process_it = true;
+    
+           // change the receivingPointer to the other buffer
+             receivingPointer = &bufferB[0];
+           // change the sendingPointer to the other buffer
+             sendingPointer  = &bufferA[0];
+             return;
+   
+           } // the buffer can be read by loop() because loop() is free
+           
+           else 
+           { // m_process_it is true =>  the sending buffer is being read by loop()
+             // => the interrupt routine will refill the receiving buffer again from the beginning  of the buffer
+             // The previous content of the unread receiving buffer will be lost.
+ 
+             m_pos =0;
+             return;
+    
+           } // the buffer cannot be read by loop(), because it is busy with reading the previous buffer
+       } // the full buffer does contain the endBytes at the end.
+       
+    else // the full buffer does not contain the endBytes at the end
+    { // the buffer is full but the end bytes did not arrive => the data received is corrupt and discard them
+       m_pos =0;
+       return;
+    } 
+      
+   } // ( m_pos == bufferSize -1 ) // the buffer is full
 
- } //if ( m_pos == bufferSize )
-
- // the interrupt will continue to fill the receiving buffer at  the current m_pos
+   else 
+   { // the startBytes are received and the buffer is not full: intermediate case
+    m_pos++; // increment the index of the receiving buffer
+   // the interrupt will continue to fill the receiving buffer at  the current m_pos
+    return;
+   } // the startBytes are received  and the buffer is not full
+   
+  } // after the startBytes; m_pos >=3
+ 
  
 }//ISR (SPI_STC_vect) 
  
@@ -156,9 +228,9 @@ void loop() {
 // The following process of reading the sending buffer can be interrupted when new bytes arrive at the SPI port
 
 	if (m_process_it)
-	{
+	{ // get the bytes between the startBytes and the endBytes
 	
-		for (int i = 0; i < NUMPIXELS1; i++)
+		for (int i = 1; i < NUMPIXELS1; i++)
 		{
 			strip.setPixelColor(i, sendingPointer[i * 3 + 0], sendingPointer[i * 3 + 1], sendingPointer[i * 3 + 2]);
 		//	Serial1.println(buf[i * 3 + 0]);
@@ -168,7 +240,7 @@ void loop() {
 
 		strip.show(); // show command has been  recieved
 	 
-		m_process_it = false;
+		m_process_it = false; // the sending buffer is emptied and loop() no longer is reading the buffer
 
 	} // if
 } // loop()
