@@ -19,7 +19,8 @@ public class LEDMasterController : MonoBehaviour
     /// <summary>
     public string m_portName = "COM0"; // should be specified in the inspector
     SerialPort m_serialPort;
-
+    public int m_threadCounter = 0;
+    public int m_arduinoSendPeriod = 500;
 
     /// </summary>
     //SerialToArduinoMgr m_SerialToArduinoMgr; 
@@ -43,6 +44,7 @@ public class LEDMasterController : MonoBehaviour
     //////////////////////////////////
 
     byte[] m_LEDArray1;
+    bool m_ThreadAlreadyCreated = false;
 
     private void Awake()
     { // init me
@@ -60,7 +62,7 @@ public class LEDMasterController : MonoBehaviour
 
         // Set up the serial Port
 
-        m_serialPort = new SerialPort(m_portName, 9600); // bit rate= 567000 bps = 
+        m_serialPort = new SerialPort(m_portName, 57600); // bit rate= 567000 bps = 
 
 
         //m_SerialPort.ReadTimeout = 50;
@@ -103,17 +105,6 @@ public class LEDMasterController : MonoBehaviour
     //serialPort1.Write(b,0,4);
     void Start()
     {
-
-
-        //m_ledColorGenController = gameObject.GetComponent<LEDColorGenController>();
-        ////It is assumed that all the necessary components are already attached to CommHub gameObject, which  is referred to by
-        //// gameObject field variable. gameObject.GetComponent<LEDColorGenController>() == this.gameObject.GetComponent<LEDColorGenController>();
-        //if (m_ledColorGenController == null)
-        //{
-        //    Debug.LogError("The global Variable  m_ledColorGenController is not  defined");
-        //    Application.Quit();
-        //}
-
         //m_ledColorGenController.m_ledSenderHandler += UpdateLEDArray; // THis is moved to CommHub.cs
 
         // public delegate LEDSenderHandler (byte[] LEDArray); defined in LEDColorGenController
@@ -121,7 +112,9 @@ public class LEDMasterController : MonoBehaviour
 
         m_LEDColorGenController = this.gameObject.GetComponent<LEDColorGenController>();
 
+        //m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs + 2;
         m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs;
+<<<<<<< HEAD
 
         m_LEDArray = new byte[m_LEDCount * 3]; // 280*3 = 840 < 1024
 
@@ -131,37 +124,40 @@ public class LEDMasterController : MonoBehaviour
 
         int m_index = 0;
 
+=======
+       
+        m_LEDArray = new byte[m_LEDCount * 3]; // 186*3 < 1024
+       
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
         // define an action
-        m_updateArduino = () => {
-
-            //Debug.Log("Thread Run Test");
-            //Write(byte[] buffer, int offset, int count);
-            // for debugging, comment out:
-
+        m_updateArduino = () => { 
+          
             try
-            {
-
-                // for (int i =0; i < m_LEDArray.Length; i++)
-                // {
-                //Debug.Log(i + "th byte:" +m_LEDArray[i]);
-                // }
-                //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
-
+            { //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
 
                 //Yes, the Write methods do block , until all data have been passed from the serial port driver to the UART FIFO.
                 //Usually, this is not a problem.It will not block "forever," just for as long as it takes.
                 //For example, if you were to send a 2K byte string, at 9600 bps, the write method would take about 2 seconds to return.
-                //Are you seeing some other operation? Naturally, you must make sure that something else isn't affecting operation,
-                //such as the .Handshake property.  If .Handshake is set to HandshakeRequestToSend or HandshakeRequestToSendXonXoff, 
-                //then CTS must be True in order to send data.  If CTS is not connected, or not asserted, then the Write method may not return.
+
+                //Write(byte[] buffer, int offset, int count);
+                if(m_threadCounter > m_arduinoSendPeriod )
+                {
+                    m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
+                    Array.Clear(m_LEDArray, 0, m_LEDArray.Length);
+                    m_threadCounter = 0;
+                }
+                else
+                {
+                    m_threadCounter++;
+                }
+               
 
 
-
-                m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }
             catch (Exception ex)
             {
                 Debug.Log("Error:" + ex.ToString());
+<<<<<<< HEAD
                 //#if UNITY_EDITOR
                 //                // Application.Quit() does not work in the editor so
                 //                // UnityEditor.EditorApplication.isPlaying = false;
@@ -169,6 +165,15 @@ public class LEDMasterController : MonoBehaviour
                 //#else
                 //                   Application.Quit();
                 //#endif
+=======
+#if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                UnityEditor.EditorApplication.isPlaying = false;
+                //UnityEditor.EditorApplication.Exit(0);
+#else
+                Application.Quit();
+#endif
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
             }
 
@@ -178,35 +183,48 @@ public class LEDMasterController : MonoBehaviour
 
         };
 
+<<<<<<< HEAD
 
         m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
                                                                  // Thread state = unstarted
+=======
+        // m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
+                                                         // Thread state = unstarted
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
     }// void Start()
 
 
-    public void UpdateLEDArray(byte[] ledArray)
+    public void UpdateLEDArray(byte[] ledArray) // ledArray is a reference type
     {
-        // use prepared ledArray rather than given for debugging
+        //Invoke("SendLedMessage", 1.0f);
+        if (m_ThreadAlreadyCreated == true)
+        {
+            // use prepared ledArray rather than given for debugging
+
+            // Send the new LED array only when the sending thread has finished sending the previous LEDArray
+            // THat is, only when m_Thread.IsAlive is false. Tit happends when the method of the thread returns;
+            // That is when the sending thread has sent all the LED array.
+
+            Debug.Log("1) Thread State == " + m_Thread.ThreadState);
+
+            Debug.Log("2) Thread.IsAlive " + m_Thread.IsAlive);
+
+            //https://stackoverflow.com/questions/6578001/how-to-start-a-stopped-thread
+            //This would create a new instance of the thread and start it. The ThreadStateException error is because,
+            //simply, you can't re-start a thread that's in a stopped state.
+            // m_MyThread.Start() is only valid for threads in the Unstarted state.
+            //  What needs done in cases like this is to create a new thread instance and invoke Start() on the new instance.
+
+            // send prepared byte arrays for debugging
+
+            if (!m_Thread.IsAlive)
+            {  // is there a thread running?
+                // 
+                Debug.Log(" the previous run of the thread has finished");
 
 
-
-        // Send the new LED array only when the sending thread has finished sending the previous LEDArray
-        // THat is, only when m_Thread.IsAlive is false. Tit happends when the method of the thread returns;
-        // That is when the sending thread has sent all the LED array.
-
-        //Debug.Log("1) Thread State == " + m_Thread.ThreadState);
-
-        //Debug.Log("2) Thread.IsAlive " + m_Thread.IsAlive);
-
-        //https://stackoverflow.com/questions/6578001/how-to-start-a-stopped-thread
-        //This would create a new instance of the thread and start it. The ThreadStateException error is because,
-        //simply, you can't re-start a thread that's in a stopped state.
-        // m_MyThread.Start() is only valid for threads in the Unstarted state.
-        //  What needs done in cases like this is to create a new thread instance and invoke Start() on the new instance.
-
-        // send prepared byte arrays for debugging
-
+<<<<<<< HEAD
         if (!m_Thread.IsAlive)
         {
 
@@ -245,16 +263,70 @@ public class LEDMasterController : MonoBehaviour
 
                 }
                 // m_LEDArray = ledArray;
-
-                m_Thread = new Thread(new ThreadStart(m_updateArduino));
-                //m_Thread.IsBackground = true;
-
-                // Starting The thread sends m_LEDArray to the arduino master
-                m_Thread.Start();
+=======
+                try
+                {
+                    // use the new LED array for the new invocation of the sending thread
 
 
-            }
 
+                    //m_LEDArray[0] = 0;
+                    //m_LEDArray[1] = 0;
+                    //m_LEDArray[2] = 0;
+
+                    //m_LEDArray[3 * (m_LEDCount - 1) + 0] = 255;
+                    //m_LEDArray[3 * (m_LEDCount - 1) + 1] = 255;
+                    //m_LEDArray[3 * (m_LEDCount - 1) + 2] = 255;
+
+
+                    for (int i = 0; i < m_LEDCount; i++)
+                    {
+                        m_LEDArray[3 * i] = (byte)i;
+                        m_LEDArray[3 * i + 1] = 0;
+                        m_LEDArray[3 * i + 2] = 0;
+
+                    }
+
+                    //for (int i = 1; i < (m_LEDCount - 1); i++)
+                    //{
+                    //    m_LEDArray[3 * i]     = ledArray[3 * (i - i)];
+                    //    m_LEDArray[3 * i + 1] = ledArray[3 * (i - i)  + 1];
+                    //    m_LEDArray[3 * i + 2] = ledArray[3 * (i - i) + 2];
+                    //}
+
+                    //  m_LEDArray = ledArray; // struc array: array is a reference type derived from
+                    // the abstract base type Array; they use foreach iteration
+
+                    m_Thread = new Thread(new ThreadStart(m_updateArduino));
+                    //m_Thread.IsBackground = true;
+
+                    // Starting The thread sends m_LEDArray to the arduino master
+
+                    m_Thread.Start();
+                    //Thread.Sleep(1000);
+                    Debug.Log(" started to send LED array to arduino");
+
+
+                }
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
+                catch (Exception ex)
+                {
+                    Debug.Log(" Exception =" + ex.ToString());
+#if UNITY_EDITOR
+                    // Application.Quit() does not work in the editor so
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    //UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
+
+                }
+
+
+            } // The thread is not alive
+
+<<<<<<< HEAD
             catch (Exception ex)
             {
                 Debug.Log(" Exception =" + ex.ToString());
@@ -265,42 +337,60 @@ public class LEDMasterController : MonoBehaviour
                 //#else
                 //                   Application.Quit();
                 //#endif
+=======
+            else
+            { // the thread is alive
+                Debug.Log("Thread is alive; Wait until it finishes and the arrived array of led bytes is discarded");
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
+                // The sending thread is still busy sending  the previous LED array =>: The arrived LED array is discarded
             }
+        }//if (m_ThreadAlreadyCreated == true)
 
-            // ** yooJin, print m_LEDArray here and compare it with the data received by
-            // the arduino master. Because the default serial port is used by the communication
-            // between the unity script and the arduino master, you need to use another serial port
-            // to send data from the master arduino to the serial monitor
-
-            //for (int i=0; i < m_LEDCount; i++)
-            // {
-            //     Vector3 color = new Vector3();
-
-            //     color[0] = m_LEDArray[3 * i + 0];
-            //     color[1] = m_LEDArray[3 * i + 1];
-            //     color[2] = m_LEDArray[3 * i + 2];
-
-            //     // yooJin: Uncomment the following for debugging
-            //     //Debug.Log(" In UpdateLEDArray: Send: " + i +  "th LED color:" + color);
-
-            // }
-
-
-        }
         else
-        {
-            Debug.Log("Thread is alive; Wait until it finishes and the arrived array of led bytes is discarded");
+        { // The  thread has been never created;
 
-            // The sending thread is still busy sending  the previous LED array =>: The arrived LED array is discarded
-        }
+            //for (int i = 0; i < m_LEDCount; i++)
+            //{
+            //    m_LEDArray[3 * i] = 1;
+            //    m_LEDArray[3 * i + 1] = 2;
+            //    m_LEDArray[3 * i + 2] = 3;
 
-    }
-    //  UpdateLEDArray()
+            //}
+
+            //for (int i = 1; i < (m_LEDCount - 1); i++)
+            //{
+            //    m_LEDArray[3 * i]     = ledArray[3 * (i - i)];
+            //    m_LEDArray[3 * i + 1] = ledArray[3 * (i - i)  + 1];
+            //    m_LEDArray[3 * i + 2] = ledArray[3 * (i - i) + 2];
+            //}
+
+            //  m_LEDArray = ledArray; // struc array: array is a reference type derived from
+            // the abstract base type Array; they use foreach iteration
+
+            m_Thread = new Thread(new ThreadStart(m_updateArduino));
+            //m_Thread.IsBackground = true;
+
+            // Starting The thread sends m_LEDArray to the arduino master
+            m_Thread.Start();
+
+            Debug.Log(" started to send LED array to arduino for the first time");
+
+            m_ThreadAlreadyCreated = true;
+        } //  // The  thread has been never created;
+
+    } //  UpdateLEDArray()
 
     void Update()
     {
 
+<<<<<<< HEAD
     }
+=======
+
+    }
+    
+}//public class LEDMasterController 
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
 }//public class LEDMasterControlle
