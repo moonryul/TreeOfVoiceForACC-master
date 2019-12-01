@@ -35,61 +35,58 @@ const int NumPixles2 = 44;
 const int NumPixels3 = 50;
 const int NumPixels4 = 52;
 
-const int m_totalNumOfPixels = NumPixe1s1 +  NumPixe1s2 +  NumPixe1s3 +  NumPixe1s4 +2; // include the start 3 bytes and the end 3 bytes
+const int m_totalNumOfPixels = NumPixe1s1 +  NumPixe1s2 +  NumPixe1s3 +  NumPixe1s4 + 2; // include the start 3 bytes and the end 3 bytes
 
-const int m_totalByteSize = m_totalNumOfPixels * 3; 
+//const int m_totalByteSize = m_totalNumOfPixels * 3;
 
-
+const int m_totalByteSize = m_totalNumOfPixels;
 const int group1ByteSize = NumPixels1 * 3;
 const int group2ByteSize = NumPixles2 * 3;
 const int group3ByteSize = NumPixels3 * 3;
 const int group4ByteSize = NumPixels4 * 3;
-//const int group5ByteSize = 40 * 3;
+
+
 
 byte m_receiveBuffer[SERIAL_RX_BUFFER_SIZE];
 
+byte m_totalReceiveBuffer[m_totalByteSize ;
+
+                          // SERIAL_RX_BUFFER_SIZE == 64;
+                          // defined in C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\HardWareSerial.h
+
+                          byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start of a single frame of LEDs.
+                          byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the end a single frame of LEDs.
 
 
-byte m_totalReceiveBuffer[m_totalByteSize] ;
+                          boolean m_newFrameHasArrived = false;
+                          // newFrameHasArrived is true when m_totalNumOfPixels of LED Pixel Data has arrived but not yet displayed or sent
 
+                          SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
+                          SPISettings SPISettingB (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 2
+                          SPISettings SPISettingC (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 3
+                          SPISettings SPISettingD (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 4
 
-// SERIAL_RX_BUFFER_SIZE == 64;
-// defined in C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\HardWareSerial.h
+                          //SPISettings mySettting(speedMaximum, dataOrder, dataMode)
 
-byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start of a single frame of LEDs.
-byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the end a single frame of LEDs.
+                          //Parameters
+                          //speedMaximum: The maximum speed of communication. For a SPI chip rated up to 20 MHz, use 20,000000.
+                          //Arduino will automatically use the best speed that is equal to or less than the number you use with SPISettings.
 
+                          //On Mega, default speed is 4 MHz (SPI clock divisor at 4). Max is 8 MHz (SPI clock divisor at 2).
+                          //SPI can operate at extremely high speeds (millions of bytes per second), which may be too fast for some devices.
+                          //To accommodate such devices, you can adjust the data rate.
+                          //In the Arduino SPI library, the speed is set by the setClockDivider() function,
+                          //which divides the master clock (16MHz on most Arduinos) down to a frequency between 8MHz (/2) and 125kHz (/128).
+                          //https://www.dorkbotpdx.org/blog/paul/spi_transactions_in_arduino
+                          //The clock speed you give to SPISettings is the maximum speed your SPI device can use,
+                          //not the actual speed your Arduino compatible board can create.
 
-boolean m_newFrameHasArrived = false; 
-// newFrameHasArrived is true when m_totalNumOfPixels of LED Pixel Data has arrived but not yet displayed or sent
+                          //dataOrder: MSBFIRST or LSBFIRST : Byte transfer from the most significant bit (MSB) Transfer?
+                          //dataMode : SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3
 
-
-SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
-SPISettings SPISettingB (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 2
-SPISettings SPISettingC (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 3
-SPISettings SPISettingD (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 4
-
-//SPISettings mySettting(speedMaximum, dataOrder, dataMode)
-
-//Parameters
-//speedMaximum: The maximum speed of communication. For a SPI chip rated up to 20 MHz, use 20,000000.
-//Arduino will automatically use the best speed that is equal to or less than the number you use with SPISettings.
-
-//On Mega, default speed is 4 MHz (SPI clock divisor at 4). Max is 8 MHz (SPI clock divisor at 2).
-//SPI can operate at extremely high speeds (millions of bytes per second), which may be too fast for some devices.
-//To accommodate such devices, you can adjust the data rate.
-//In the Arduino SPI library, the speed is set by the setClockDivider() function,
-//which divides the master clock (16MHz on most Arduinos) down to a frequency between 8MHz (/2) and 125kHz (/128).
-//https://www.dorkbotpdx.org/blog/paul/spi_transactions_in_arduino
-//The clock speed you give to SPISettings is the maximum speed your SPI device can use,
-//not the actual speed your Arduino compatible board can create.
-
-//dataOrder: MSBFIRST or LSBFIRST : Byte transfer from the most significant bit (MSB) Transfer?
-//dataMode : SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3
-
-//The SPISettings code automatically converts the max clock to the fastest clock your board can produce,
-//which doesn't exceed the SPI device's capability.  As Arduino grows as a platform, onto more capable hardware,
-//this approach is meant to allow SPI-based libraries to automatically use new faster SPI speeds.
+                          //The SPISettings code automatically converts the max clock to the fastest clock your board can produce,
+                          //which doesn't exceed the SPI device's capability.  As Arduino grows as a platform, onto more capable hardware,
+                          //this approach is meant to allow SPI-based libraries to automatically use new faster SPI speeds.
 
 void setup (void) {
 
@@ -115,7 +112,7 @@ void setup (void) {
   //It then enables SPI mode with the hardware in "master" mode. This has the side-effect of setting MISO as an input.
 
   Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
- // Serial.begin(115200); // To read bytes from the PC Unity Script
+  // Serial.begin(115200); // To read bytes from the PC Unity Script
 
   //Define another serial port:
   //https://www.arduino.cc/reference/en/language/functions/communication/serial/
@@ -163,79 +160,139 @@ void loop (void) {
 
   // If Serial.read() == -1, it means that head == tail, i.e. there are no bytes to read, that is, underflow happened
 
-  readWithStartEndMarkers(); // read until a new frame of LED data arrives
+  //readFrameWithStartEndMarkers(); // read until a new frame of LED data arrives
+  readFrameWithoutMarkers();
+  
   showNewFrame(); // display the new frame of LED data that has arrived
 
 } // loop()
 
-void readWithStartEndMarkers()
+void readFrameWithoutMarkers() 
+{
+  
+
+  // for debug: prepare a frame of lED data to send to the four slaves
+
+  for (int i = 0; i < group1ByteSize ; i++ ) {
+
+    if ( i % 3 = 0 ) {
+      m_totalReceiveBuffer[ i ] = 254;
+    }
+    else if ( i % 3 = 1 ) {
+      m_totalReceiveBuffer[ i ] = 0;
+    }
+    else if ( i % 3 = 2 ) {
+      m_totalReceiveBuffer[ i ] = 0;
+    }
+  }//for (int i = 0; i < group1ByteSize ; i++ )
+
+ for (int i = 0; i < group2ByteSize ; i++ ) {
+
+    if ( i % 3 = 0 ) {
+      m_totalReceiveBuffer[ group1ByteSize  + i ] = 0;
+    }
+    else if ( i % 3 = 1 ) {
+      m_totalReceiveBuffer[ group1ByteSize  +i ] = 254;
+    }
+    else if ( i % 3 = 2 ) {
+      m_totalReceiveBuffer[group1ByteSize  + i ] = 0;
+    }
+
+ }//for (int i = 0; i < group2ByteSize ; i++ )
+ 
+
+
+
+  for (int i = 0; i < group3ByteSize ; i++ ) {
+
+    if ( i % 3 = 0 ) {
+      m_totalReceiveBuffer[  group1ByteSize  + group2ByteSize + i ] = 0;
+    }
+    else if ( i % 3 = 1 ) {
+      m_totalReceiveBuffer[ group1ByteSize  + group2ByteSize + i ] = 0;
+    }
+    else if ( i % 3 = 2 ) {
+      m_totalReceiveBuffer[ group1ByteSize  + group2ByteSize + i ] = 254;
+    }
+
+
+  }//for (int i =0; i < group3ByteSize ; i++ )
+
+
+  for (int i = 0; i < group4ByteSize ; i++ ) {
+
+    if ( i % 3 = 0 ) {
+      m_totalReceiveBuffer[ group1ByteSize  + group2ByteSize + group3ByteSize + i ] = 254;
+    }
+    else if ( i % 3 = 1 ) {
+      m_totalReceiveBuffer[  group1ByteSize  + group2ByteSize + group3ByteSize +i ] = 254;
+    }
+    else if ( i % 3 = 2 ) {
+      m_totalReceiveBuffer[  group1ByteSize  + group2ByteSize + group3ByteSize +i ] = 0;
+    }
+
+
+  }//for (int i =0; i < group4ByteSize ; i++ )
+ //void readFrameWithoutMarkers() 
+
+void readFrameWithStartEndMarkers()
 {
 
 
-  static boolean startBytesHaveArrived = false; // The boolean variable indicating whether the start bytes of a frame has arrived and thus
-                                                // indicating whether the process of receiving a frame of LED data is in progress
+    while ( Serial.available() && m_newFrameHasArrived == false ) //  read the serial port while newFrameHasArrived is false, that while
+                                                               // a new frame of LED data has not arrived or has not been displayed or sent
+                                                              //  During this time, do not read the serial port. Continue to read the port
+                                                              // when the arrived frame of data has been displayed and thereby newFrameHasArrived beocmes false;
   
-  static byte index = 0; // index of the buffer
-
-  byte c; // received byte
-
-  while ( Serial.available() && m_newFrameHasArrived == false ) //  read the serial port while newFrameHasArrived is false, that while 
-                                                             // a new frame of LED data has not arrived or has not been displayed or sent   
-                                                            //  During this time, do not read the serial port. Continue to read the port
-                                                            // when the arrived frame of data has been displayed and thereby newFrameHasArrived beocmes false;
-                                                   
-  {
-    c = Serial.read(); // the read the first byte in the serial port buffer
-    m_totalReceiveBuffer[index] = c;
-
-    if ( startBytesHaveArrived  == true )  { // true when the start bytes has been arrived
-      
-      // check if the end bytes for the current frame of data has arrived
-      
-      if ( !endBytesHasArrived( m_totalReceiveBuffer, index, m_endBytes) ) { // if the end marker has not received => continue to read the next byte
-        
-        index++; // continue to read
-      }
-      else { // the end bytes has just arrived at the index-2, index-1 and index of the totalReceiveBuffer
-        // check if the total number of bytes from the start bytes to  the end bytes is equal to m_totalByteSize.
-        if ( index == m_totalByteSize  - 1 ) {   // Is the current index of the buffer  the last element of the buffer when the end bytes has arrived
-
-          m_newFrameHasArrived = true;
-         
-          startBytesHaveArrived  = false; // "The frame InProgress" is made false after the end bytes arrived
-
-           index = 0; // The receive buffer is full so start to read into the first byte of the buffer in the next round
-
-        }// (the buffer fully filled)
-        
-        else { // the total number of bytes from the start bytes to the end bytes is not equal to the required number of bytes for a correct frame.
-          // => ignore the read data and re-start the process of receiving a frame of LED data
-
-          index =0;  // go to the start of the receive buffer
-          startBytesHaveArrived = false; // made false after a wrong number of data has been read from the start bytes to the end bytes
-
+    {
+      c = Serial.read(); // the read the first byte in the serial port buffer
+      m_totalReceiveBuffer[index] = c;
+  
+      if ( startBytesHaveArrived  == true )  { // true when the start bytes has been arrived
+  
+        // check if the end bytes for the current frame of data has arrived
+  
+        if ( !endBytesHasArrived( m_totalReceiveBuffer, index, m_endBytes) ) { // if the end marker has not received => continue to read the next byte
+  
+          index++; // continue to read
         }
-      }  // else: the end bytes has just arrived
+        else { // the end bytes has just arrived at the index-2, index-1 and index of the totalReceiveBuffer
+          // check if the total number of bytes from the start bytes to  the end bytes is equal to m_totalByteSize.
+          if ( index == m_totalByteSize  - 1 ) {   // Is the current index of the buffer  the last element of the buffer when the end bytes has arrived
+  
+            m_newFrameHasArrived = true;
+  
+            startBytesHaveArrived  = false; // "The frame InProgress" is made false after the end bytes arrived
+  
+             index = 0; // The receive buffer is full so start to read into the first byte of the buffer in the next round
+  
+          }// (the buffer fully filled)
+  
+          else { // the total number of bytes from the start bytes to the end bytes is not equal to the required number of bytes for a correct frame.
+            // => ignore the read data and re-start the process of receiving a frame of LED data
+  
+            index =0;  // go to the start of the receive buffer
+            startBytesHaveArrived = false; // made false after a wrong number of data has been read from the start bytes to the end bytes
+  
+          }
+        }  // else: the end bytes has just arrived
+  
+      }// ( startBytesHaveArrived == true )
+  
+      else // ( startBytesHaveArrived == false)
+        // check if the start bytes has arrived at the index-2, index-1, and index of the receive buffer
+        if ( startMarkerArrived( m_totalReceiveBuffer, index, m_startBytes) ) {
+  
+          startBytesHaveArrived = true; // made true when the start bytes has arrived
+  
+        }
+        else { // the start bytes has not arrived
+          index++; // continue to read
+        }
+  
+    } //  while ( Serial.available() && newFrameHasArrived == false )
 
-
-    }// ( startBytesHaveArrived == true )
-    
-    else // ( startBytesHaveArrived == false)
-      // check if the start bytes has arrived at the index-2, index-1, and index of the receive buffer
-      if ( startMarkerArrived( m_totalReceiveBuffer, index, m_startBytes) ) {
-      
-        startBytesHaveArrived = true; // made true when the start bytes has arrived
-   
-      }
-
-      else { // the start bytes has not arrived
-        index++; // continue to read
-      }
-      
-  } //  while ( Serial.available() && newFrameHasArrived == false )
-
-
-} // readWithStartEndMarkers()
+} // readFrameWithStartEndMarkers()
 
 void showNewFrame() {
   if ( m_newFrameHasArrived == true ) {
@@ -250,13 +307,13 @@ void showNewFrame() {
   } // ( m_newDataArrived == true )
 
 
-}// showNewFrame()
+}// showNewData()
 
 boolean startBytesArrived( byte totalReceiveBuffer[], int index, byte startBytes[] ) {
 
 
-   if ( totalReceiveBuffer[index] == startBytes[2] && totalReceiveBuffer[index - 1] = startBytes[1]
-            totalReceiveBuffer[index - 2]  == startBytes[0] ) {
+  if ( totalReceiveBuffer[index] == startBytes[2] && totalReceiveBuffer[index - 1] = startBytes[1]
+       totalReceiveBuffer[index - 2]  == startBytes[0] ) {
 
     return true;
 
@@ -267,9 +324,9 @@ boolean startBytesArrived( byte totalReceiveBuffer[], int index, byte startBytes
 
 boolean endBytesHaveArrived( byte totalReceiveBuffer[], int index, byte endBytes[] ) {
 
- 
-   if ( totalReceiveBuffer[index] == endtBytes[2] && totalReceiveBuffer[index - 1] = endBytes[1]
-            totalReceiveBuffer[index - 2]  == endBytes[0] ) {
+
+  if ( totalReceiveBuffer[index] == endtBytes[2] && totalReceiveBuffer[index - 1] = endBytes[1]
+       totalReceiveBuffer[index - 2]  == endBytes[0] ) {
 
     return true;
 
@@ -352,7 +409,7 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
   SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalReceiveBuffer[3 + group1ByteSize], group2ByteSize);
   SPI.transfer( m_endBytes, 3);
- 
+
   digitalWrite(ss2, HIGH);
 
   SPI.endTransaction();
@@ -366,9 +423,9 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
   digitalWrite(ss4, HIGH);
   //digitalWrite(ss5, HIGH);
 
- SPI.transfer( m_startBytes, 3);
+  SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalReceiveBuffer[3 + group1ByteSize + group2ByteSize], group3ByteSize);
- SPI.transfer( m_endBytes, 3);
+  SPI.transfer( m_endBytes, 3);
 
   digitalWrite(ss3, HIGH);
 
@@ -384,10 +441,10 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
   digitalWrite(ss4, LOW);   // select the fourth SS line
   //digitalWrite(ss5, HIGH);
 
- SPI.transfer( m_startBytes, 3);
+  SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalReceiveBuffer[3 + group1ByteSize + group2ByteSize  + group3ByteSize ], group4ByteSize );
- SPI.transfer( m_endBytes, 3);
- 
+  SPI.transfer( m_endBytes, 3);
+
   digitalWrite(ss4, HIGH);
 
   SPI.endTransaction();
@@ -401,10 +458,9 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
 
 
 void printLEDBytesToSerialMonitor( byte * totalReceiveBuffer,  int totalByteSize  )
-{ 
+{
 
   for (int i = 0; i < m_totalByteSize; i++) {
-
 
     Serial1.println(totalReceiveBuffer[i]);
 
