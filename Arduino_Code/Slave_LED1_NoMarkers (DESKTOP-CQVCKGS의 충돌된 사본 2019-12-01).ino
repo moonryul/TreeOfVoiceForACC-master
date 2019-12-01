@@ -15,13 +15,14 @@
 SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS1, &pixieSerial);
 
-const int m_totalBufferSize = (NUMPIXELS1 + 2) * 3; // 6 bytes are for the start and end bytes
+const int m_totalBufferSize = NUMPIXELS1  * 3; // 6 bytes are for the start and end bytes
 
 byte m_bufferA[m_totalBufferSize];
 byte m_bufferB[m_totalBufferSize];
 
 byte* m_receivingPointer = &m_bufferA[0];
 byte* m_sendingPointer = &m_bufferB[0];
+byte  m_tempBufferPointer;
 
 
 byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start of a single frame of LEDs.
@@ -50,7 +51,7 @@ byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the en
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
 
-volatile boolean recvInProgress = false;  
+volatile boolean m_realBytesInProgress = false;  
 
 // If the current code does not work, try https://sites.google.com/site/qeewiki/books/avr-guide/spi
 
@@ -121,50 +122,38 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when a new byte arrives:
 
   m_receivingPointer[ m_pos ] = c; // recevingPointer points to bufferA initially
 
-  // There are three cases:
+   
+  if ( m_pos == m_totalBufferSize - 1 ) {
+    
+        // the full buffer has been filled        
+  
+     //  originally:
+     //  m_receivingPointer = &m_bufferA[0];
 
-  if ( realBytesInProgress == true )  {
+       m_tempBufferPointer =  m_sendingPointer;
+       
+       m_sendingPointer = m_receivingPointer; // loop() starts to read the received data only when the swapping of the 
+                                              // buffers is performed
+       m_receivingPointer = m_tempBufferPointer;
+       
+       // originally: 
+      // m_sendingPointer  = &m_bufferB[0];
 
-    if ( !endMarkerArrived( m_receivingPointer, m_pos, m_startBytes) ) { // the end marker not received
-      index++;
-    }
-    else { // the end marker received
-
-      if ( m_pos == m_totalBufferSize - 1 ) {
-        // the full buffer has been filled
-
-
-        m_pos  = 0;
-        realBytesInProgress = false; // made false after the end bytes arrived
-         m_process_it = true;
-         
+        m_pos  = 0; // points to the receiving buffer always
+        m_process_it = true;
+            
     // m_process_it = true means that loop() can begin and continue to  read the sending buffer;
 
-     // change the receivingPointer to the other buffer
-       m_receivingPointer = &m_bufferB[0];
-    // change the sendingPointer to the other buffer
-       m_sendingPointer  = &m_bufferA[0];
+         
     
       }// if
-      else { // the number of bytes between the start bytes and the end bytes is a wrong number
-             //=> ignore the read data and continue to read
+      
+  else { // continue to read into the receiving buffer
 
         m_pos ++;
-        realBytesInProgress = false; // made false after a wrong number of data has been read between the start and end bytes
-
+     
       } // else
-    }  // else
-
-  } // if ( realBytesInProgress == true )
-  else if ( startMarkerArrived( m_receivingPointer, m_pos, m_endBytes) ) {
-
-    realBytesInProgress = true; // made true after the start bytes arrived
-    m_pos++;
-
-  }
-  else {
-    m_pos++;
-  }
+   
 
 }//ISR (SPI_STC_vect)
 

@@ -15,13 +15,14 @@
 SoftwareSerial pixieSerial(-1, PIXIEPIN);
 Adafruit_Pixie strip = Adafruit_Pixie(NUMPIXELS1, &pixieSerial);
 
-const int m_totalBufferSize = (NUMPIXELS1 + 2) * 3; // 6 bytes are for the start and end bytes
+const int m_totalBufferSize = NUMPIXELS1  * 3; // 6 bytes are for the start and end bytes
 
 byte m_bufferA[m_totalBufferSize];
 byte m_bufferB[m_totalBufferSize];
 
 byte* m_receivingPointer = &m_bufferA[0];
 byte* m_sendingPointer = &m_bufferB[0];
+byte  m_tempBufferPointer;
 
 
 byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start of a single frame of LEDs.
@@ -50,7 +51,7 @@ byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the en
 volatile byte m_pos = 0;
 volatile boolean m_process_it = false;
 
-volatile boolean recvInProgress = false;  
+volatile boolean m_realBytesInProgress = false;  
 
 // If the current code does not work, try https://sites.google.com/site/qeewiki/books/avr-guide/spi
 
@@ -58,15 +59,17 @@ void setup() {
 
   //Serial.begin(115200); // for debugging
 
+Serial.begin(9600); // for debugging
+//
   //Serial1.begin(115200); // for debugging
 
-  pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
+  //pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
 
-  pinMode(PIXIEPIN, OUTPUT);
+ //pinMode(PIXIEPIN, OUTPUT);
 
   // pinMode(SS, INPUT); // PIN is INPUT by default
 
-  pinMode(MISO, OUTPUT); // this is needed to send bytes to the master
+ // pinMode(MISO, OUTPUT); // this is needed to send bytes to the master
 
   // turn on SPI communication
   //SPCR |= bit(SPE); // SPCR = SPI Control Register; SPIE =bit 7, SPE = bit 6, MSTR = bit 4
@@ -121,50 +124,37 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when a new byte arrives:
 
   m_receivingPointer[ m_pos ] = c; // recevingPointer points to bufferA initially
 
-  // There are three cases:
 
-  if ( realBytesInProgress == true )  {
+   
+  if ( m_pos == m_totalBufferSize - 1 ) { //   // check if the receiving buffer is fully filled:
+    
+        // the full buffer has been filled => swap the receiving and sending buffers     
+  
+     //  originally:
+     //  m_receivingPointer = &m_bufferA[0];
 
-    if ( !endMarkerArrived( m_receivingPointer, m_pos, m_startBytes) ) { // the end marker not received
-      index++;
-    }
-    else { // the end marker received
+       m_tempBufferPointer =  m_sendingPointer;
+       
+       m_sendingPointer = m_receivingPointer; // loop() starts to read the received data only when the swapping of the 
+                                              // buffers is performed
+       m_receivingPointer = m_tempBufferPointer; 
+       
+       // originally: 
+      // m_sendingPointer  = &m_bufferB[0];
 
-      if ( m_pos == m_totalBufferSize - 1 ) {
-        // the full buffer has been filled
-
-
-        m_pos  = 0;
-        realBytesInProgress = false; // made false after the end bytes arrived
-         m_process_it = true;
-         
-    // m_process_it = true means that loop() can begin and continue to  read the sending buffer;
-
-     // change the receivingPointer to the other buffer
-       m_receivingPointer = &m_bufferB[0];
-    // change the sendingPointer to the other buffer
-       m_sendingPointer  = &m_bufferA[0];
+        m_pos  = 0; // points to the receiving buffer always
+        m_process_it = true;
+            
+    // m_process_it = true means that loop() can begin and continue to  read the sending buffer;         
     
       }// if
-      else { // the number of bytes between the start bytes and the end bytes is a wrong number
-             //=> ignore the read data and continue to read
+      
+  else { // continue to read into the receiving buffer
 
-        m_pos ++;
-        realBytesInProgress = false; // made false after a wrong number of data has been read between the start and end bytes
-
+        m_pos++;
+     
       } // else
-    }  // else
-
-  } // if ( realBytesInProgress == true )
-  else if ( startMarkerArrived( m_receivingPointer, m_pos, m_endBytes) ) {
-
-    realBytesInProgress = true; // made true after the start bytes arrived
-    m_pos++;
-
-  }
-  else {
-    m_pos++;
-  }
+   
 
 }//ISR (SPI_STC_vect)
 
@@ -178,9 +168,9 @@ void loop() {
     for (int i = 1; i < NUMPIXELS1; i++)
     {
       strip.setPixelColor(i, m_sendingPointer[i * 3 + 0], m_sendingPointer[i * 3 + 1], m_sendingPointer[i * 3 + 2]);
-      //	Serial1.println(buf[i * 3 + 0]);
-      //	Serial1.print(buf[i * 3 + 1]);
-      //	Serial1.print(buf[i * 3 + 2]);
+      	Serial.print(m_sendingPointer[i * 3 + 0]);
+      	Serial.print(m_sendingPointer[i * 3 + 1]);
+      	Serial.println(m_sendingPointer[i * 3 + 2]);
     }
 
     strip.show(); // show command has been  recieved
