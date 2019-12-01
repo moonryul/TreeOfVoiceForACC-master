@@ -25,8 +25,8 @@ public class LEDColorGenController : MonoBehaviour
         //public Vector3 EulerAngles; // the rotation of the boid reference frame
         public int BoidLEDID; // the position of the  boid in the boid reference frame        
 
-        public int  NearestBoidID; // the scale factors
-        public int  NeighborCount; // heading direction of the boid on the local plane
+        public int NearestBoidID; // the scale factors
+        public int NeighborCount; // heading direction of the boid on the local plane
         public float NeighborRadius; // the radius of the circle boid
         public Vector4 NearestBoidColor;         // RGBA color
         public Vector4 AvgColor;         // RGBA color
@@ -70,7 +70,7 @@ public class LEDColorGenController : MonoBehaviour
     //                            // 1 => the ceiling, 2 => left wall, 3=> right wall. 4=> front wall
     //}
 
-  
+
     public SimpleBoidsTreeOfVoice m_boids;
     public ActionPlanController m_actionPlanController;
 
@@ -79,7 +79,7 @@ public class LEDColorGenController : MonoBehaviour
 
     public int m_totalNumOfLEDs; // computed within script
 
-  
+
     public float m_samplingRadius = 0.05f; //10cm
 
     public float m_LEDChainHeight = 9; // the height of the LED chain 
@@ -91,13 +91,13 @@ public class LEDColorGenController : MonoBehaviour
     // It ranges from - m_MaxDomainRadius to m_DomainRadius; from the bottom of the sphere to 
     // the top of the sphere. 
 
-  
+
 
     //https://www.reddit.com/r/Unity3D/comments/7ppldz/physics_simulation_on_gpu_with_compute_shader_in/
 
     protected int m_kernelIDLED;
 
-    [SerializeField] protected ComputeShader m_BoidLEDComputeShader; 
+    [SerializeField] protected ComputeShader m_BoidLEDComputeShader;
     // m_BoidLEDComputeShader is set to SampleLEDColors.compute in the inspector          
     public ComputeBuffer m_BoidLEDBuffer { get; protected set; }
 
@@ -105,8 +105,8 @@ public class LEDColorGenController : MonoBehaviour
 
     byte[] m_LEDArray;
 
-   
-    
+
+
     public float m_LEDInterval = 0.2f; // 20cm
     //public int m_SphericalMotion = 0;  
 
@@ -117,7 +117,7 @@ public class LEDColorGenController : MonoBehaviour
     public float m_startingRadiusOfOuterChain = 1.4f; // m
     public float m_endingRadiusOfOuterChainThreeTurns = 2f;
 
-   // public float m_MaxDomainRadius = 10; // 10
+    // public float m_MaxDomainRadius = 10; // 10
     //public float m_MinDomainRadius = 0.7f; // 0.7
 
     //public float m_MaxChainRadius = 2; // 2 m
@@ -191,13 +191,13 @@ public class LEDColorGenController : MonoBehaviour
 
 
 
-        m_totalNumOfLEDs = m_firstChain  + m_secondChain
+        m_totalNumOfLEDs = m_firstChain + m_secondChain
                           + m_thirdChain + m_fourthChain;
 
-        m_startAngleOfChain1 = m_beginFromInChain1  * M_PI / 180; // degree
-        m_startAngleOfChain2 = m_beginFromInChain2 *  M_PI / 180; // degree
+        m_startAngleOfChain1 = m_beginFromInChain1 * M_PI / 180; // degree
+        m_startAngleOfChain2 = m_beginFromInChain2 * M_PI / 180; // degree
 
-        
+
 
         //m_threadGroupSize = Mathf.CeilToInt(m_BoidsNum / (float)BLOCK_SIZE);
 
@@ -205,7 +205,7 @@ public class LEDColorGenController : MonoBehaviour
 
 
 
-        m_LEDArray = new byte[m_totalNumOfLEDs * 3];
+        m_LEDArray = new byte[m_totalNumOfLEDs * 3 * 2];
 
         //m_boidArray = new BoidData[ (int) m_BoidsNum ]; // for debugging
 
@@ -218,7 +218,7 @@ public class LEDColorGenController : MonoBehaviour
             // UnityEditor.EditorApplication.isPlaying = false;
             UnityEditor.EditorApplication.Exit(0);
 #else
-                   Application.Quit();
+            Application.Quit();
 #endif
         }
 
@@ -226,7 +226,7 @@ public class LEDColorGenController : MonoBehaviour
         m_kernelIDLED = m_BoidLEDComputeShader.FindKernel("SampleLEDColors");
 
 
-        
+
         //  m_BoidLEDRenderDebugBuffer = new ComputeBuffer(m_totalNumOfLEDs,
         //                                  4 * sizeof(float), ComputeBufferType.Default);
 
@@ -253,7 +253,7 @@ public class LEDColorGenController : MonoBehaviour
 
         //for (int i = 0; i < m_totalNumOfLEDs; i++)
         //{
-           
+
         //    Debug.Log(i + "th LED Position" + m_BoidLEDArray[i].Position);
         //    Debug.Log(i + "th LED HeadDir" + m_BoidLEDArray[i].HeadDir);
         //    Debug.Log(i + "th LED Color" + m_BoidLEDArray[i].Color);
@@ -268,13 +268,13 @@ public class LEDColorGenController : MonoBehaviour
     } // Awake()
     void Start()
     {
-       //initialize others
+        //initialize others
         m_boids = this.gameObject.GetComponent<SimpleBoidsTreeOfVoice>();
 
-      
+
         //m_BoidBuffer = m_boids.m_BoidBuffer;
 
-        if (m_boids== null)
+        if (m_boids == null)
         {
             Debug.LogError("SimpleBoidsTreeOfVoice component should be added to CommHub");
             // Application.Quit();
@@ -283,7 +283,7 @@ public class LEDColorGenController : MonoBehaviour
           //  UnityEditor.EditorApplication.isPlaying = false;
             UnityEditor.EditorApplication.Exit(0);
 #else
-                   Application.Quit();
+            Application.Quit();
 #endif
 
         }
@@ -301,8 +301,8 @@ public class LEDColorGenController : MonoBehaviour
         //m_BoidsNum = (int)m_boids.m_BoidsNum;
 
         m_BoidLEDComputeShader.SetInt("_BoidsNum", (int)m_boids.m_BoidsNum);
-           
-        m_BoidLEDComputeShader.SetBuffer(m_kernelIDLED,  "_BoidBuffer", m_boids.m_BoidBuffer);
+
+        m_BoidLEDComputeShader.SetBuffer(m_kernelIDLED, "_BoidBuffer", m_boids.m_BoidBuffer);
 
         m_BoidLEDComputeShader.SetInt("_ColorSamplingMethod", m_colorSamplingMethod);
 
@@ -377,29 +377,29 @@ public class LEDColorGenController : MonoBehaviour
 
         float a2 = r2;
         float b2 = Mathf.Log(r3 / a2) / (6 * M_PI);
-                
-       
-  
-        
+
+
+
+
         Debug.Log("Inner Chain:");
 
         float LEDChainLength = 0;
 
-        for (int i = 0; i < m_firstChain ; i++ )
+        for (int i = 0; i < m_firstChain; i++)
         {
             // set the head direction of the boid:  direction angle on xz plane
 
             //  thi_i: the angle on the local coordinate system:
 
             float th_i = GetAngularPositionOfLED(a1, b1, 0.0f, ref LEDChainLength,
-                                                 m_LEDInterval,  i);
-            float r_i = a1 * Mathf.Exp(b1 * th_i );
+                                                 m_LEDInterval, i);
+            float r_i = a1 * Mathf.Exp(b1 * th_i);
 
-            float th_i_g = th_i +  ( M_PI/180) * m_beginFromInChain1;
+            float th_i_g = th_i + (M_PI / 180) * m_beginFromInChain1;
 
             //Debug.Log(i + "th LED Ploar POS (th,r) [global coord]:" + new Vector2(th_i_g * 180 / M_PI, r_i).ToString("F4"));
 
-            m_BoidLEDArray[i].Position = new Vector3(r_i  * Mathf.Cos(th_i_g), m_LEDChainHeight, r_i * Mathf.Sin(th_i_g));
+            m_BoidLEDArray[i].Position = new Vector3(r_i * Mathf.Cos(th_i_g), m_LEDChainHeight, r_i * Mathf.Sin(th_i_g));
 
             // Set the rotation frame of LED boid at m_boidLEDArray[i].Position:
 
@@ -448,7 +448,7 @@ public class LEDColorGenController : MonoBehaviour
 
             m_BoidLEDArray[i].BoidFrame = boidFrame; // affine frame
 
-            
+
 
             m_BoidLEDArray[i].HeadDir = ZAxis;
 
@@ -459,7 +459,7 @@ public class LEDColorGenController : MonoBehaviour
 
 
             // m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
-             m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX); 
+            m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX);
 
             //m_writer.WriteLine(  i+ "th LED POS:" + m_BoidLEDArray[i].Position);
             //m_writer.WriteLine(i + "th LED frame:\n" + m_BoidLEDArray[i].BoidFrame);
@@ -491,7 +491,7 @@ public class LEDColorGenController : MonoBehaviour
 
         //    m_BoidLEDArray[m_numOfChain1 + i].Scale = new Vector3(initScaleX, initScaleX, initScaleX);
 
-                       
+
         //    Debug.Log(i + "th LED POS:" + ledPos.ToString("F4") );
 
         //} // for  (int i )
@@ -504,10 +504,10 @@ public class LEDColorGenController : MonoBehaviour
             // set the head direction of the boid:  direction angle on xz plane
 
             float th_i = GetAngularPositionOfLED(a2, b2, 0.0f, ref LEDChainLength,
-                                                 m_LEDInterval,  i);
+                                                 m_LEDInterval, i);
             float r_i = a2 * Mathf.Exp(b2 * th_i);
 
-            float th_i_g = th_i + (M_PI / 180) * m_beginFromInChain2 ;
+            float th_i_g = th_i + (M_PI / 180) * m_beginFromInChain2;
 
             // Debug.Log(i + "th LED Ploar POS (th,r):" + new Vector2(th_i_g * 180 / M_PI, r_i).ToString("F4"));
 
@@ -559,7 +559,7 @@ public class LEDColorGenController : MonoBehaviour
 
             Matrix4x4 boidFrame = new Matrix4x4(col0, col1, col2, col3);
 
-           
+
             m_BoidLEDArray[m_firstChain + i].BoidFrame = boidFrame;
 
             m_BoidLEDArray[m_firstChain + i].HeadDir = ZAxis;
@@ -579,7 +579,7 @@ public class LEDColorGenController : MonoBehaviour
 
         } // for  (int i )
 
-       // m_writer.Close();
+        // m_writer.Close();
 
 
         //Debug.Log("Fourth Chain:");
@@ -622,7 +622,7 @@ public class LEDColorGenController : MonoBehaviour
     float GetAngularPositionOfLED(float a, float b, float th0, ref float LEDChainLength, float ledInterval, int ledNo)
     {// // The ith LED  will be placed at location (r_i, th_i)
      //    such that  L(r(th), th0, th_i) = root(1 + b^2)/b * [ r(th_i)  - r(th0)] =ledInterval  * i, 
- 
+
         float r_th_0 = a * Mathf.Exp(b * th0);
 
         float r_th_i = (LEDChainLength) / (Mathf.Sqrt(1 + b * b) / b) + r_th_0;
@@ -638,7 +638,7 @@ public class LEDColorGenController : MonoBehaviour
     {
     }
 
-    public  void UpdateColorBrightnessParameter(int[] approachVectors) // four approach vectors; for testing use only one
+    public void UpdateColorBrightnessParameter(int[] approachVectors) // four approach vectors; for testing use only one
     {
     }
 
@@ -655,16 +655,16 @@ public class LEDColorGenController : MonoBehaviour
 
         // Now set m_BoidLEDBuffer by dispatching BoidLEDCOmputeShader.
 
-       // float currTime = Time.time; //  seconds
+        // float currTime = Time.time; //  seconds
 
-       
+
         // m_boids.DetermineParamValue("_SamplingRadius",  out m_samplingRadius);
 
-       // m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
+        // m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
 
         m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
-     
-        m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere );
+
+        m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
 
         m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius); // you can change inspector variable' value at runtime
 
@@ -755,9 +755,9 @@ public class LEDColorGenController : MonoBehaviour
 
         for (int i = 0; i < m_totalNumOfLEDs; i++)
         {
-            m_LEDArray[i * 3] =    (byte)(255 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
-            m_LEDArray[i * 3 + 1] = (byte)(255 * m_BoidLEDArray[i].Color[1]);
-            m_LEDArray[i * 3 + 2] = (byte)(255 * m_BoidLEDArray[i].Color[2]);
+            //m_LEDArray[i * 3] = (byte)(255 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
+            //m_LEDArray[i * 3 + 1] = (byte)(255 * m_BoidLEDArray[i].Color[1]);
+            //m_LEDArray[i * 3 + 2] = (byte)(255 * m_BoidLEDArray[i].Color[2]);
 
 
             //Debug.Log(i + "th LED Position" + m_BoidLEDArray[i].Position.ToString("F4"));
@@ -808,7 +808,7 @@ public class LEDColorGenController : MonoBehaviour
             // UnityEditor.EditorApplication.isPlaying = false;
             UnityEditor.EditorApplication.Exit(0);
 #else
-                   Application.Quit();
+            Application.Quit();
 #endif
 
         }
@@ -817,8 +817,8 @@ public class LEDColorGenController : MonoBehaviour
             m_LEDSenderHandler.Invoke(m_LEDArray);
         }
 
- 
-     } // Update()
+
+    } // Update()
 
 
 

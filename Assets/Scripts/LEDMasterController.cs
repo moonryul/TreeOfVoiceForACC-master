@@ -28,7 +28,7 @@ public class LEDMasterController : MonoBehaviour
     Action m_updateArduino;
 
 
-   LEDColorGenController m_LEDColorGenController;
+    LEDColorGenController m_LEDColorGenController;
 
     public byte[] m_LEDArray; // 200  LEDs
 
@@ -75,13 +75,13 @@ public class LEDMasterController : MonoBehaviour
         catch (Exception ex)
         {
             Debug.Log("Error:" + ex.ToString());
-//#if UNITY_EDITOR
-//            // Application.Quit() does not work in the editor so
-//            // UnityEditor.EditorApplication.isPlaying = false;
-//            UnityEditor.EditorApplication.Exit(0);
-//#else
-//                   Application.Quit();
-//#endif
+            //#if UNITY_EDITOR
+            //            // Application.Quit() does not work in the editor so
+            //            // UnityEditor.EditorApplication.isPlaying = false;
+            //            UnityEditor.EditorApplication.Exit(0);
+            //#else
+            //                   Application.Quit();
+            //#endif
         }
 
 
@@ -127,8 +127,8 @@ public class LEDMasterController : MonoBehaviour
 
 
         // prepare test led array
-        
-      
+
+
         int m_index = 0;
 
         // define an action
@@ -162,13 +162,13 @@ public class LEDMasterController : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.Log("Error:" + ex.ToString());
-//#if UNITY_EDITOR
-//                // Application.Quit() does not work in the editor so
-//                // UnityEditor.EditorApplication.isPlaying = false;
-//                UnityEditor.EditorApplication.Exit(0);
-//#else
-//                   Application.Quit();
-//#endif
+                //#if UNITY_EDITOR
+                //                // Application.Quit() does not work in the editor so
+                //                // UnityEditor.EditorApplication.isPlaying = false;
+                //                UnityEditor.EditorApplication.Exit(0);
+                //#else
+                //                   Application.Quit();
+                //#endif
 
             }
 
@@ -177,10 +177,10 @@ public class LEDMasterController : MonoBehaviour
             //https://stackoverflow.com/questions/22768668/c-sharp-cant-read-full-buffer-from-serial-port-arduino
 
         };
-        
-       
-       m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
-                                                                // Thread state = unstarted
+
+
+        m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
+                                                                 // Thread state = unstarted
 
     }// void Start()
 
@@ -207,14 +207,14 @@ public class LEDMasterController : MonoBehaviour
 
         // send prepared byte arrays for debugging
 
-        if ( !m_Thread.IsAlive )
+        if (!m_Thread.IsAlive)
         {
-           
+
             try
             {
                 // use the new LED array for the new invocation of the sending thread
-              
-                
+
+
                 Debug.Log(" send LED array to arduino");
 
                 //for (int i = 0; i < m_LEDCount; i++)
@@ -236,12 +236,15 @@ public class LEDMasterController : MonoBehaviour
                 //}
                 for (int i = 0; i < m_LEDCount; i++)
                 {
-                    m_LEDArray[3 * i] = 1;
-                    m_LEDArray[3 * i + 1] = 2;
-                    m_LEDArray[3 * i + 2] = 3;
+                    m_LEDArray[6 * i] = 250;
+                    m_LEDArray[6 * i + 1] = 255;
+                    m_LEDArray[6 * i + 2] = 0;
+                    m_LEDArray[6 * i + 3] = 255;
+                    m_LEDArray[6 * i + 4] = 0;
+                    m_LEDArray[6 * i + 5] = 255;
 
                 }
-               // m_LEDArray = ledArray;
+                // m_LEDArray = ledArray;
 
                 m_Thread = new Thread(new ThreadStart(m_updateArduino));
                 //m_Thread.IsBackground = true;
@@ -255,13 +258,13 @@ public class LEDMasterController : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.Log(" Exception =" + ex.ToString());
-//#if UNITY_EDITOR
-//                // Application.Quit() does not work in the editor so
-//                // UnityEditor.EditorApplication.isPlaying = false;
-//                UnityEditor.EditorApplication.Exit(0);
-//#else
-//                   Application.Quit();
-//#endif
+                //#if UNITY_EDITOR
+                //                // Application.Quit() does not work in the editor so
+                //                // UnityEditor.EditorApplication.isPlaying = false;
+                //                UnityEditor.EditorApplication.Exit(0);
+                //#else
+                //                   Application.Quit();
+                //#endif
 
             }
 
@@ -297,8 +300,7 @@ public class LEDMasterController : MonoBehaviour
 
     void Update()
     {
-       
+
     }
 
-}//public class LEDMasterController 
-
+}//public class LEDMasterControlle

@@ -52,13 +52,13 @@ int m_accumByteCount = 0;
 byte m_recieveBuffer[SERIAL_RX_BUFFER_SIZE];
 
 //volatile byte m_totalRecieveBuffer[m_totalByteSize]; // make this variable not optimized??
-byte m_totalRecieveBuffer[m_totalByteSize]; 
+byte m_totalRecieveBuffer[m_totalByteSize];
 
 // SERIAL_RX_BUFFER_SIZE == 64;
 // defined in C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\HardWareSerial.h
 
-byte m_startBytes[3]  = {0,0,0}; // This full black color indicates the start of a single frame of LEDs.
-byte m_endBytes[3]  = {255,255,255}; // This full white color indicates the end a single frame of LEDs. 
+byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start of a single frame of LEDs.
+byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the end a single frame of LEDs.
 
 
 SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
@@ -68,36 +68,36 @@ SPISettings SPISettingD (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 
 
 //SPISettings mySettting(speedMaximum, dataOrder, dataMode)
 
-  //Parameters
-  //speedMaximum: The maximum speed of communication. For a SPI chip rated up to 20 MHz, use 20,000000.
-  //Arduino will automatically use the best speed that is equal to or less than the number you use with SPISettings.
-  
- //On Mega, default speed is 4 MHz (SPI clock divisor at 4). Max is 8 MHz (SPI clock divisor at 2).
- //SPI can operate at extremely high speeds (millions of bytes per second), which may be too fast for some devices. 
- //To accommodate such devices, you can adjust the data rate. 
- //In the Arduino SPI library, the speed is set by the setClockDivider() function,  
-//which divides the master clock (16MHz on most Arduinos) down to a frequency between 8MHz (/2) and 125kHz (/128).
-  //https://www.dorkbotpdx.org/blog/paul/spi_transactions_in_arduino
-  //The clock speed you give to SPISettings is the maximum speed your SPI device can use,
-  //not the actual speed your Arduino compatible board can create.
-  
-  //dataOrder: MSBFIRST or LSBFIRST : Byte transfer from the most significant bit (MSB) Transfer?
-  //dataMode : SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3
+//Parameters
+//speedMaximum: The maximum speed of communication. For a SPI chip rated up to 20 MHz, use 20,000000.
+//Arduino will automatically use the best speed that is equal to or less than the number you use with SPISettings.
 
-  //The SPISettings code automatically converts the max clock to the fastest clock your board can produce,
-  //which doesn't exceed the SPI device's capability.  As Arduino grows as a platform, onto more capable hardware,
-  //this approach is meant to allow SPI-based libraries to automatically use new faster SPI speeds.
+//On Mega, default speed is 4 MHz (SPI clock divisor at 4). Max is 8 MHz (SPI clock divisor at 2).
+//SPI can operate at extremely high speeds (millions of bytes per second), which may be too fast for some devices.
+//To accommodate such devices, you can adjust the data rate.
+//In the Arduino SPI library, the speed is set by the setClockDivider() function,
+//which divides the master clock (16MHz on most Arduinos) down to a frequency between 8MHz (/2) and 125kHz (/128).
+//https://www.dorkbotpdx.org/blog/paul/spi_transactions_in_arduino
+//The clock speed you give to SPISettings is the maximum speed your SPI device can use,
+//not the actual speed your Arduino compatible board can create.
+
+//dataOrder: MSBFIRST or LSBFIRST : Byte transfer from the most significant bit (MSB) Transfer?
+//dataMode : SPI_MODE0, SPI_MODE1, SPI_MODE2, or SPI_MODE3
+
+//The SPISettings code automatically converts the max clock to the fastest clock your board can produce,
+//which doesn't exceed the SPI device's capability.  As Arduino grows as a platform, onto more capable hardware,
+//this approach is meant to allow SPI-based libraries to automatically use new faster SPI speeds.
 
 void setup (void) {
 
 
   // set the Slave Select Pins (SS)  as outputs:
-  
+
   pinMode(ss1, OUTPUT);
   pinMode(ss2, OUTPUT);
   pinMode(ss3, OUTPUT);
   pinMode(ss4, OUTPUT);
-  
+
   //pinMode(ss5, OUTPUT);
 
   digitalWrite(ss1, HIGH);
@@ -113,7 +113,7 @@ void setup (void) {
 
   // Slow down the master a bit
   //SPI.setClockDivider(SPI_CLOCK_DIV8);
- // SPI.setClockDivider(SPI_CLOCK_DIV16);
+  // SPI.setClockDivider(SPI_CLOCK_DIV16);
   // Sets the SPI clock divider relative to the system clock.
   // On AVR based boards, the dividers available are 2, 4, 8, 16, 32, 64 or 128.
   // The default setting is SPI_CLOCK_DIV4,
@@ -133,7 +133,7 @@ void setup (void) {
   // USB port in the PC to Pin 19 and 18; Also open another arduino IDE for the second serial port, Serial1.
   // Use the first arduino IDE to upload the arduino code, and use the second arduino IDE to report messages.
 
- // Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
+  // Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
 
 }
 
@@ -209,7 +209,7 @@ void loop (void) {
       m_totalRecieveBuffer[m_accumByteCount + i] = m_recieveBuffer[i];
     }
     //update the current accumulatedByteCount
-    m_accumByteCount = m_accumByteCount + readCount;
+    m_accumByteCount = m_accumByteCount;
 
   }//if (  (m_accumByteCount + availCount) < m_totalByteSize)
 
@@ -235,7 +235,7 @@ void loop (void) {
 
     // readCount < countToRead  means that timeout has happened.  the 1 s of timeout seems enough.
     // But who knows?
-    
+
     // transfer from receiveBuffer to totalReceiveBuffer
 
     for (int i = 0; i <  readCount; i++ )
@@ -248,25 +248,25 @@ void loop (void) {
 
   }//if ((m_accumByteCount + availCount) >= m_totalByteSize)
 
-  
+
   // Now  m_accumByteCount may be equal to  m_totalByteSize. Then
   // Send the read bytes to  the slaves via SPI communications.
 
-  if ( m_accumByteCount == m_totalByteSize ) 
+  if ( m_accumByteCount == m_totalByteSize )
   {
- //sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
+    //sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
 
-  // print the ledBytes to the serial monitor via Serial1.
-  
-  printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
+    // print the ledBytes to the serial monitor via Serial1.
+
+    printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
 
 
-  m_accumByteCount = 0;
+    m_accumByteCount = 0;
   }
 
 
- // now  m_accumByteCount < m_totalBytesSize; continue to read the serial buffer
- return;
+  // now  m_accumByteCount < m_totalBytesSize; continue to read the serial buffer
+  return;
 
 }// loop
 
@@ -281,15 +281,15 @@ void loop (void) {
 
 void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
 {
- // use deviceA
+  // use deviceA
   SPI.beginTransaction(SPISettingA);
 
-//https://forum.arduino.cc/index.php?topic=52111.0
-//It is because they share the pins that we need the SS line. With multiple slaves, 
-//only one slave is allowed to "own" the MISO line(by configuring it as an output).So when SS is brought low 
-//for that slave it switches its MISO line from high - impedance to output, then it can reply to requests 
-//from the master.When the SS is brought high again(inactive) that slave must reconfigure that line as high - impedance, 
-//so another slave can use it.
+  //https://forum.arduino.cc/index.php?topic=52111.0
+  //It is because they share the pins that we need the SS line. With multiple slaves,
+  //only one slave is allowed to "own" the MISO line(by configuring it as an output).So when SS is brought low
+  //for that slave it switches its MISO line from high - impedance to output, then it can reply to requests
+  //from the master.When the SS is brought high again(inactive) that slave must reconfigure that line as high - impedance,
+  //so another slave can use it.
 
 
   // send the first group of data to the first slave:
@@ -301,9 +301,9 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   //digitalWrite(ss5, HIGH);
 
   // To send  a sequence of bytes to a slave arduiono via SPI, mark the start and the end
-  // of the sequence with special bytes, m_startByte and m_endByte respectivley. 
-   SPI.transfer( m_startBytes, 3);
-   
+  // of the sequence with special bytes, m_startByte and m_endByte respectivley.
+  SPI.transfer( m_startBytes, 3);
+
   SPI.transfer( &totalRecieveBuffer[0], group1ByteSize);
 
   SPI.transfer( m_endBytes, 3);
@@ -322,9 +322,9 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
 
   SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalRecieveBuffer[group1ByteSize], group2ByteSize);
-  
+
   SPI.transfer( m_endBytes, 3);
-  
+
   digitalWrite(ss2, HIGH);
 
   SPI.endTransaction();
@@ -338,16 +338,16 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   digitalWrite(ss4, HIGH);
   //digitalWrite(ss5, HIGH);
 
- SPI.transfer( m_startBytes, 3);
+  SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalRecieveBuffer[group1ByteSize + group2ByteSize], group3ByteSize);
-    SPI.transfer( m_endBytes, 3);
-    
+  SPI.transfer( m_endBytes, 3);
+
   digitalWrite(ss3, HIGH);
 
   SPI.endTransaction();
 
   // send the fourth group of data to the fourth slave:
- 
+
   SPI.beginTransaction(SPISettingD);
 
   digitalWrite(ss1, HIGH);
@@ -356,9 +356,9 @@ void  sendLEDBytesToSlaves( byte *totalRecieveBuffer, int m_totalByteSize )
   digitalWrite(ss4, LOW);   // select the fourth SS line
   //digitalWrite(ss5, HIGH);
 
- SPI.transfer( m_startBytes, 3);
+  SPI.transfer( m_startBytes, 3);
   SPI.transfer( &totalRecieveBuffer[group1ByteSize + group2ByteSize  + group3ByteSize ], group4ByteSize);
-      SPI.transfer( m_endBytes, 3);
+  SPI.transfer( m_endBytes, 3);
   digitalWrite(ss4, HIGH);
 
   SPI.endTransaction();
@@ -373,7 +373,7 @@ void printLEDBytesToSerialMonitor( byte * totalRecieveBuffer,  int totalByteSize
 {
   //Serial1.println(" read bytes:" + countToRead);
 
-  
+
 
   for (int i = 0; i < totalByteSize; i++) {
 

@@ -85,7 +85,7 @@ void setup (void) {
   // SPI.setBitOrder(MSBFIRST);
 
   //Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
-  Serial.begin(115200); // To read bytes from the PC Unity Script
+  Serial.begin(9600); // To read bytes from the PC Unity Script
 
   //Define another serial port:
   //https://www.arduino.cc/reference/en/language/functions/communication/serial/
@@ -97,7 +97,7 @@ void setup (void) {
   // USB port in the PC to Pin 19 and 18; Also open another arduino IDE for the second serial port, Serial1.
   // Use the first arduino IDE to upload the arduino code, and use the second arduino IDE to report messages.
 
-  Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
+  Serial1.begin(9600); // Use Serial1 to send message to the Serial1 Monitor
 
 }
 
@@ -229,7 +229,7 @@ void loop (void) {
   // So  send the read bytes to  the slaves via SPI communications.
 
 
-  sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
+  //sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
 
   // print the ledBytes to the serial monitor via Serial1.
   printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
