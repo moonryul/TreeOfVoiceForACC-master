@@ -59,15 +59,17 @@ void setup() {
 
   //Serial.begin(115200); // for debugging
 
+Serial.begin(9600); // for debugging
+//
   //Serial1.begin(115200); // for debugging
 
-  pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
+  //pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
 
-  pinMode(PIXIEPIN, OUTPUT);
+ //pinMode(PIXIEPIN, OUTPUT);
 
   // pinMode(SS, INPUT); // PIN is INPUT by default
 
-  pinMode(MISO, OUTPUT); // this is needed to send bytes to the master
+ // pinMode(MISO, OUTPUT); // this is needed to send bytes to the master
 
   // turn on SPI communication
   //SPCR |= bit(SPE); // SPCR = SPI Control Register; SPIE =bit 7, SPE = bit 6, MSTR = bit 4
@@ -122,10 +124,11 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when a new byte arrives:
 
   m_receivingPointer[ m_pos ] = c; // recevingPointer points to bufferA initially
 
+
    
-  if ( m_pos == m_totalBufferSize - 1 ) {
+  if ( m_pos == m_totalBufferSize - 1 ) { //   // check if the receiving buffer is fully filled:
     
-        // the full buffer has been filled        
+        // the full buffer has been filled => swap the receiving and sending buffers     
   
      //  originally:
      //  m_receivingPointer = &m_bufferA[0];
@@ -134,7 +137,7 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when a new byte arrives:
        
        m_sendingPointer = m_receivingPointer; // loop() starts to read the received data only when the swapping of the 
                                               // buffers is performed
-       m_receivingPointer = m_tempBufferPointer;
+       m_receivingPointer = m_tempBufferPointer; 
        
        // originally: 
       // m_sendingPointer  = &m_bufferB[0];
@@ -142,15 +145,13 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when a new byte arrives:
         m_pos  = 0; // points to the receiving buffer always
         m_process_it = true;
             
-    // m_process_it = true means that loop() can begin and continue to  read the sending buffer;
-
-         
+    // m_process_it = true means that loop() can begin and continue to  read the sending buffer;         
     
       }// if
       
   else { // continue to read into the receiving buffer
 
-        m_pos ++;
+        m_pos++;
      
       } // else
    
@@ -167,9 +168,9 @@ void loop() {
     for (int i = 1; i < NUMPIXELS1; i++)
     {
       strip.setPixelColor(i, m_sendingPointer[i * 3 + 0], m_sendingPointer[i * 3 + 1], m_sendingPointer[i * 3 + 2]);
-      //	Serial1.println(buf[i * 3 + 0]);
-      //	Serial1.print(buf[i * 3 + 1]);
-      //	Serial1.print(buf[i * 3 + 2]);
+      	Serial.print(m_sendingPointer[i * 3 + 0]);
+      	Serial.print(m_sendingPointer[i * 3 + 1]);
+      	Serial.println(m_sendingPointer[i * 3 + 2]);
     }
 
     strip.show(); // show command has been  recieved
