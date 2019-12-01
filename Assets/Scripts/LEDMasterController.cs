@@ -103,17 +103,6 @@ public class LEDMasterController : MonoBehaviour
     //serialPort1.Write(b,0,4);
     void Start()
     {
-
-
-        //m_ledColorGenController = gameObject.GetComponent<LEDColorGenController>();
-        ////It is assumed that all the necessary components are already attached to CommHub gameObject, which  is referred to by
-        //// gameObject field variable. gameObject.GetComponent<LEDColorGenController>() == this.gameObject.GetComponent<LEDColorGenController>();
-        //if (m_ledColorGenController == null)
-        //{
-        //    Debug.LogError("The global Variable  m_ledColorGenController is not  defined");
-        //    Application.Quit();
-        //}
-
         //m_ledColorGenController.m_ledSenderHandler += UpdateLEDArray; // THis is moved to CommHub.cs
 
         // public delegate LEDSenderHandler (byte[] LEDArray); defined in LEDColorGenController
@@ -121,54 +110,33 @@ public class LEDMasterController : MonoBehaviour
 
         m_LEDColorGenController = this.gameObject.GetComponent<LEDColorGenController>();
 
-        m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs;
+        m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs + 2;
 
-        m_LEDArray = new byte[m_LEDCount * 3]; // 280*3 = 840 < 1024
-
-
-        // prepare test led array
-        
-      
-        int m_index = 0;
+        m_LEDArray = new byte[m_LEDCount * 3]; // 186*3 < 1024
 
         // define an action
-        m_updateArduino = () => {
-
-            //Debug.Log("Thread Run Test");
-            //Write(byte[] buffer, int offset, int count);
-            // for debugging, comment out:
-
+        m_updateArduino = () => { 
+          
             try
-            {
-
-                // for (int i =0; i < m_LEDArray.Length; i++)
-                // {
-                //Debug.Log(i + "th byte:" +m_LEDArray[i]);
-                // }
-                //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
-
+            { //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
 
                 //Yes, the Write methods do block , until all data have been passed from the serial port driver to the UART FIFO.
                 //Usually, this is not a problem.It will not block "forever," just for as long as it takes.
                 //For example, if you were to send a 2K byte string, at 9600 bps, the write method would take about 2 seconds to return.
-                //Are you seeing some other operation? Naturally, you must make sure that something else isn't affecting operation,
-                //such as the .Handshake property.  If .Handshake is set to HandshakeRequestToSend or HandshakeRequestToSendXonXoff, 
-                //then CTS must be True in order to send data.  If CTS is not connected, or not asserted, then the Write method may not return.
 
-
-
+                //Write(byte[] buffer, int offset, int count);
                 m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
             }
             catch (Exception ex)
             {
                 Debug.Log("Error:" + ex.ToString());
-//#if UNITY_EDITOR
-//                // Application.Quit() does not work in the editor so
-//                // UnityEditor.EditorApplication.isPlaying = false;
-//                UnityEditor.EditorApplication.Exit(0);
-//#else
-//                   Application.Quit();
-//#endif
+#if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                UnityEditor.EditorApplication.isPlaying = false;
+                //UnityEditor.EditorApplication.Exit(0);
+#else
+                Application.Quit();
+#endif
 
             }
 
@@ -177,19 +145,16 @@ public class LEDMasterController : MonoBehaviour
             //https://stackoverflow.com/questions/22768668/c-sharp-cant-read-full-buffer-from-serial-port-arduino
 
         };
-        
-       
+            
        m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
-                                                                // Thread state = unstarted
+                                                             // Thread state = unstarted
 
     }// void Start()
 
 
-    public void UpdateLEDArray(byte[] ledArray)
+    public void UpdateLEDArray(byte[] ledArray) // ledArray is a reference type
     {
         // use prepared ledArray rather than given for debugging
-
-
 
         // Send the new LED array only when the sending thread has finished sending the previous LEDArray
         // THat is, only when m_Thread.IsAlive is false. Tit happends when the method of the thread returns;
@@ -209,39 +174,39 @@ public class LEDMasterController : MonoBehaviour
 
         if ( !m_Thread.IsAlive )
         {
-           
+                     
             try
             {
                 // use the new LED array for the new invocation of the sending thread
-              
-                
+                              
                 Debug.Log(" send LED array to arduino");
+                                
+                m_LEDArray[0] = 0;
+                m_LEDArray[1] = 0;
+                m_LEDArray[2] = 0;
+                                
+                m_LEDArray[3 * (m_LEDCount - 1) + 0] = 255;
+                m_LEDArray[3 * (m_LEDCount - 1)  + 1] = 255;
+                m_LEDArray[3 * (m_LEDCount - 1)  + 2] = 255;
 
-                //for (int i = 0; i < m_LEDCount; i++)
-                //{
-                //    ledArray[3 * i] = 0;
-                //    ledArray[3 * i + 1] = 0;
-                //    ledArray[3 * i + 2] = 0;
-
-                //}
-
-                //ledArray[3 * m_index + 0] = 255;
-                //ledArray[3 * m_index + 1] = 0;
-                //ledArray[3 * m_index + 2] = 0;
-
-                //m_index++;
-                //if (m_index == m_LEDCount)
-                //{
-                //    m_index = 0; // wrap the index
-                //}
-                for (int i = 0; i < m_LEDCount; i++)
+                
+                for (int i = 1; i < (m_LEDCount-1); i++)
                 {
                     m_LEDArray[3 * i] = 1;
                     m_LEDArray[3 * i + 1] = 2;
-                    m_LEDArray[3 * i + 2] = 3;
+                    m_LEDArray[3 * i + 2] = 3;               
 
                 }
-               // m_LEDArray = ledArray;
+
+                //for (int i = 1; i < (m_LEDCount - 1); i++)
+                //{
+                //    m_LEDArray[3 * i]     = ledArray[3 * (i - i)];
+                //    m_LEDArray[3 * i + 1] = ledArray[3 * (i - i)  + 1];
+                //    m_LEDArray[3 * i + 2] = ledArray[3 * (i - i) + 2];
+                //}
+
+                  //  m_LEDArray = ledArray; // struc array: array is a reference type derived from
+                // the abstract base type Array; they use foreach iteration
 
                 m_Thread = new Thread(new ThreadStart(m_updateArduino));
                 //m_Thread.IsBackground = true;
@@ -255,35 +220,16 @@ public class LEDMasterController : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.Log(" Exception =" + ex.ToString());
-//#if UNITY_EDITOR
-//                // Application.Quit() does not work in the editor so
-//                // UnityEditor.EditorApplication.isPlaying = false;
-//                UnityEditor.EditorApplication.Exit(0);
-//#else
-//                   Application.Quit();
-//#endif
+#if UNITY_EDITOR
+                // Application.Quit() does not work in the editor so
+                UnityEditor.EditorApplication.isPlaying = false;
+                //UnityEditor.EditorApplication.Exit(0);
+#else
+                   Application.Quit();
+#endif
 
             }
-
-            // ** yooJin, print m_LEDArray here and compare it with the data received by
-            // the arduino master. Because the default serial port is used by the communication
-            // between the unity script and the arduino master, you need to use another serial port
-            // to send data from the master arduino to the serial monitor
-
-            //for (int i=0; i < m_LEDCount; i++)
-            // {
-            //     Vector3 color = new Vector3();
-
-            //     color[0] = m_LEDArray[3 * i + 0];
-            //     color[1] = m_LEDArray[3 * i + 1];
-            //     color[2] = m_LEDArray[3 * i + 2];
-
-            //     // yooJin: Uncomment the following for debugging
-            //     //Debug.Log(" In UpdateLEDArray: Send: " + i +  "th LED color:" + color);
-
-            // }
-
-
+                       
         }
         else
         {
