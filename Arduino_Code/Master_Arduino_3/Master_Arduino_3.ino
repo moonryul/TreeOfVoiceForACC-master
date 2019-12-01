@@ -23,17 +23,17 @@
 #include <SPI.h>
 
 // The built-in pin number of the slave, which is used within SPI.Begin()
-const int ss1 = 53; // connect master pin 53 the first slave pin 53
+const int ss1 = 37; // connect master pin 53 the first slave pin 53
 const int ss2 = 49; // connect master pin 49 to the second slave pin 53
 const int ss3 = 48; // connect master pin 48 to the third  slave pin 53
 const int ss4 = 47; // connect master pin 47 to the fourth slave pin 53
 //int ss5 = 46;
 
 // A total num of LED = 186; each slave processes 40 LEDs
-const int NumPixels1 = 30;
+const int NumPixels1 = 40;
 const int NumPixles2 = 44;
 const int NumPixels3 = 50;
-const int NumPixels4 = 53;
+const int NumPixels4 = 52;
 
 const int group1ByteSize = NumPixels1 * 3;
 const int group2ByteSize = NumPixles2 * 3;
@@ -47,8 +47,7 @@ const int m_totalByteSize = group1ByteSize + group2ByteSize + group3ByteSize + g
 
 byte m_receiveBuffer[SERIAL_RX_BUFFER_SIZE];
 
-//volatile byte m_totalReceiveBuffer[m_totalByteSize]; // make this variable not optimized??
-byte m_totalRecieveBuffer[m_totalByteSize +  6];
+byte m_totalReceiveBuffer[m_totalByteSize +  6];
 
 // SERIAL_RX_BUFFER_SIZE == 64;
 // defined in C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino\HardWareSerial.h
@@ -57,7 +56,7 @@ byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start 
 byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the end a single frame of LEDs.
 
 
-boolean newData = false;
+boolean m_newDataArrived = false;
 
 SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
 SPISettings SPISettingB (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 2
@@ -109,17 +108,8 @@ void setup (void) {
   //It sets SCK and MOSI low, and SS high.
   //It then enables SPI mode with the hardware in "master" mode. This has the side-effect of setting MISO as an input.
 
-  // Slow down the master a bit
-  //SPI.setClockDivider(SPI_CLOCK_DIV8);
-  // SPI.setClockDivider(SPI_CLOCK_DIV16);
-  // Sets the SPI clock divider relative to the system clock.
-  // On AVR based boards, the dividers available are 2, 4, 8, 16, 32, 64 or 128.
-  // The default setting is SPI_CLOCK_DIV4,
-  // which sets the SPI clock to one-quarter the frequency of the system clock (4 Mhz for the boards at 16 MHz).
-  // SPI.setBitOrder(MSBFIRST);
-
-  //Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
-  Serial.begin(115200); // To read bytes from the PC Unity Script
+  Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
+ // Serial.begin(115200); // To read bytes from the PC Unity Script
 
   //Define another serial port:
   //https://www.arduino.cc/reference/en/language/functions/communication/serial/
@@ -175,70 +165,79 @@ void loop (void) {
 void recvWithStartEndMarkers()
 {
 
-  static boolean recvInProgress = false;
+  static boolean realBytesInProgress = false;
   
   static byte index = 0; // 0 to 2
 
   byte recByte;
 
-  while ( Serial.available() && newData == false ) // do not read the buffer until newData has been shown;
-                                                   // newData is made false after newData is shown
+  while ( Serial.available() && m_newDataArrived == false ) //  read the serial port while newData is not ready to be shown, that is, newDataArrived is false;
+                                                            // reading the serial port when  newData has been shown is reasonable.
+                                                   
   {
     recByte = Serial.read();
     m_totalReceiveBuffer[index] = recByte;
 
-    if ( realBytesInProgress == true )  {
+    if ( realBytesInProgress == true )  { // realBytesInProgress == true when the start bytes has been arrived
 
-      if ( !endMarkerArrived( m_totalReceiveBuffer, index, m_startBytes) ) { // the end marker not received
-        index++;
+      if ( !endMarkerArrived( m_totalReceiveBuffer, index, m_endBytes) ) { // the end marker has not received
+        index++; // continue to read
       }
       else { // the end marker received
 
-        if ( index == (m_totalByteSize + 6) - 1 ) {
-          // the full buffer has been filled
+        if ( index == (m_totalByteSize + 6) - 1 ) {   // the current index of the buffer is the last element of the buffer; fully filled
 
-
-          index = 0;
+          index = 0; // fill the buffer from scratch
           realBytesInProgress = false; // made false after the end bytes arrived
-          newData = true;
+
+ //        m_totalReceiveBuffer[(m_totalByteSize + 6) - 1-2] = m_startBytes[0];
+//         m_totalReceiveBuffer[(m_totalByteSize + 6) - 1-1] = m_startBytes[1];
+   //      m_totalReceiveBuffer[(m_totalByteSize + 6) - 1] = m_startBytes[2];
+         
+          m_newDataArrived = true;
 
         }// if
-        else { // the number of bytes between the start bytes and the end bytes is a wrong number
-          // => ignore the read data and continue to read
+        else { // the number of bytes between the start bytes and the end bytes is not equal to the required number of bytes.
+          // => ignore the read data and continue to read from scratch
 
-          index++;
+          index =0;  // fill the buffer from scratch
           realBytesInProgress = false; // made false after a wrong number of data has been read between the start and end bytes
 
         }
       }  // else
 
     }// ( realBytesInProgress == true )
+    
     else // ( realBytesInProgress == false)
-      if ( startMarkerArrived( m_totalReceiveBuffer, index, m_endBytes) ) {
+      if ( startMarkerArrived( m_totalReceiveBuffer, index, m_startBytes) ) {
 
-        realBytesInProgress = true; // made true after the start bytes arrived
-        index++;
+         m_totalReceiveBuffer[0] = m_startBytes[0];
+         m_totalReceiveBuffer[1] = m_startBytes[1];
+         m_totalReceiveBuffer[2] = m_startBytes[2];
+         
+        realBytesInProgress = true; // made true when the start bytes has arrived
+        index = 3; //
 
       }
-      else {
-        index++;
+      else { // "real bytes" not yet arriving
+        index++; // continue to read
       }
       
-  } //  while ( Serial.available() && newData == false )
+  } //  while ( Serial.available() && newDataArrived == false )
 
 } // recvWithStartEndMarkers()
 
 void showNewData() {
-  if ( newData == true ) {
+  if ( m_newDataArrived == true ) {
 
-    sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
+    sendLEDBytesToSlaves(m_totalReceiveBuffer,  m_totalByteSize );
 
     // print the ledBytes to the serial monitor via Serial1.
 
-    //printLEDBytesToSerialMonitor(m_totalRecieveBuffer,  m_totalByteSize);
+    printLEDBytesToSerialMonitor(m_totalReceiveBuffer,  m_totalByteSize );
 
-    newData = false;
-  } // ( newData == true )
+    m_newDataarrived = false;
+  } // ( m_newDataArrived == true )
 
 
 }// showNewData()
@@ -301,7 +300,7 @@ boolean endMarkerArrived( byte totalReceiveBuffer[], int index, byte endBytes[] 
 void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
 {
   // use deviceA
-  SPI.beginTransaction(SPISettingsA);
+  SPI.beginTransaction(SPISettingA);
 
   //https://forum.arduino.cc/index.php?topic=52111.0
   //It is because they share the pins that we need the SS line. With multiple slaves,
@@ -389,7 +388,7 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
 
 void printLEDBytesToSerialMonitor( byte * totalReceiveBuffer,  int totalByteSize  )
 {
-  //Serial1.println(" read bytes:" + countToRead);
+ 
   for (int i = 0; i < m_totalByteSize + 6; i++) {
 
     Serial1.println(totalReceiveBuffer[i]);
