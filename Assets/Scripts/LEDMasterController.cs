@@ -29,7 +29,7 @@ public class LEDMasterController : MonoBehaviour
     Action m_updateArduino;
 
 
-   LEDColorGenController m_LEDColorGenController;
+    LEDColorGenController m_LEDColorGenController;
 
     public byte[] m_LEDArray; // 200  LEDs
 
@@ -77,13 +77,13 @@ public class LEDMasterController : MonoBehaviour
         catch (Exception ex)
         {
             Debug.Log("Error:" + ex.ToString());
-//#if UNITY_EDITOR
-//            // Application.Quit() does not work in the editor so
-//            // UnityEditor.EditorApplication.isPlaying = false;
-//            UnityEditor.EditorApplication.Exit(0);
-//#else
-//                   Application.Quit();
-//#endif
+            //#if UNITY_EDITOR
+            //            // Application.Quit() does not work in the editor so
+            //            // UnityEditor.EditorApplication.isPlaying = false;
+            //            UnityEditor.EditorApplication.Exit(0);
+            //#else
+            //                   Application.Quit();
+            //#endif
         }
 
 
@@ -114,9 +114,21 @@ public class LEDMasterController : MonoBehaviour
 
         //m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs + 2;
         m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs;
+<<<<<<< HEAD
+
+        m_LEDArray = new byte[m_LEDCount * 3]; // 280*3 = 840 < 1024
+
+
+        // prepare test led array
+
+
+        int m_index = 0;
+
+=======
        
         m_LEDArray = new byte[m_LEDCount * 3]; // 186*3 < 1024
        
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
         // define an action
         m_updateArduino = () => { 
           
@@ -145,6 +157,15 @@ public class LEDMasterController : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.Log("Error:" + ex.ToString());
+<<<<<<< HEAD
+                //#if UNITY_EDITOR
+                //                // Application.Quit() does not work in the editor so
+                //                // UnityEditor.EditorApplication.isPlaying = false;
+                //                UnityEditor.EditorApplication.Exit(0);
+                //#else
+                //                   Application.Quit();
+                //#endif
+=======
 #if UNITY_EDITOR
                 // Application.Quit() does not work in the editor so
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -152,6 +173,7 @@ public class LEDMasterController : MonoBehaviour
 #else
                 Application.Quit();
 #endif
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
             }
 
@@ -161,8 +183,14 @@ public class LEDMasterController : MonoBehaviour
 
         };
 
+<<<<<<< HEAD
+
+        m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
+                                                                 // Thread state = unstarted
+=======
         // m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
                                                          // Thread state = unstarted
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
     }// void Start()
 
@@ -196,6 +224,46 @@ public class LEDMasterController : MonoBehaviour
                 Debug.Log(" the previous run of the thread has finished");
 
 
+<<<<<<< HEAD
+        if (!m_Thread.IsAlive)
+        {
+
+            try
+            {
+                // use the new LED array for the new invocation of the sending thread
+
+
+                Debug.Log(" send LED array to arduino");
+
+                //for (int i = 0; i < m_LEDCount; i++)
+                //{
+                //    ledArray[3 * i] = 0;
+                //    ledArray[3 * i + 1] = 0;
+                //    ledArray[3 * i + 2] = 0;
+
+                //}
+
+                //ledArray[3 * m_index + 0] = 255;
+                //ledArray[3 * m_index + 1] = 0;
+                //ledArray[3 * m_index + 2] = 0;
+
+                //m_index++;
+                //if (m_index == m_LEDCount)
+                //{
+                //    m_index = 0; // wrap the index
+                //}
+                for (int i = 0; i < m_LEDCount; i++)
+                {
+                    m_LEDArray[6 * i] = 250;
+                    m_LEDArray[6 * i + 1] = 255;
+                    m_LEDArray[6 * i + 2] = 0;
+                    m_LEDArray[6 * i + 3] = 255;
+                    m_LEDArray[6 * i + 4] = 0;
+                    m_LEDArray[6 * i + 5] = 255;
+
+                }
+                // m_LEDArray = ledArray;
+=======
                 try
                 {
                     // use the new LED array for the new invocation of the sending thread
@@ -240,6 +308,7 @@ public class LEDMasterController : MonoBehaviour
 
 
                 }
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
                 catch (Exception ex)
                 {
@@ -257,9 +326,22 @@ public class LEDMasterController : MonoBehaviour
 
             } // The thread is not alive
 
+<<<<<<< HEAD
+            catch (Exception ex)
+            {
+                Debug.Log(" Exception =" + ex.ToString());
+                //#if UNITY_EDITOR
+                //                // Application.Quit() does not work in the editor so
+                //                // UnityEditor.EditorApplication.isPlaying = false;
+                //                UnityEditor.EditorApplication.Exit(0);
+                //#else
+                //                   Application.Quit();
+                //#endif
+=======
             else
             { // the thread is alive
                 Debug.Log("Thread is alive; Wait until it finishes and the arrived array of led bytes is discarded");
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
                 // The sending thread is still busy sending  the previous LED array =>: The arrived LED array is discarded
             }
@@ -302,8 +384,13 @@ public class LEDMasterController : MonoBehaviour
     void Update()
     {
 
+<<<<<<< HEAD
+    }
+=======
 
     }
     
 }//public class LEDMasterController 
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
+}//public class LEDMasterControlle

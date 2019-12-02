@@ -115,8 +115,22 @@ void setup (void) {
   //It sets SCK and MOSI low, and SS high.
   //It then enables SPI mode with the hardware in "master" mode. This has the side-effect of setting MISO as an input.
 
+<<<<<<< HEAD
+  // Slow down the master a bit
+  //SPI.setClockDivider(SPI_CLOCK_DIV8);
+ // SPI.setClockDivider(SPI_CLOCK_DIV16);
+  // Sets the SPI clock divider relative to the system clock.
+  // On AVR based boards, the dividers available are 2, 4, 8, 16, 32, 64 or 128.
+  // The default setting is SPI_CLOCK_DIV4,
+  // which sets the SPI clock to one-quarter the frequency of the system clock (4 Mhz for the boards at 16 MHz).
+  // SPI.setBitOrder(MSBFIRST);
+
+  Serial1.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
+  Serial.begin(9600); // To read bytes from the PC Unity Script
+=======
   //Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
   // Serial.begin(115200); // To read bytes from the PC Unity Script
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
   //Define another serial port:
   //https://www.arduino.cc/reference/en/language/functions/communication/serial/
@@ -164,6 +178,8 @@ void setup (void) {
 
 void loop (void) {
   //https://arduino.stackexchange.com/questions/1726/how-does-the-arduino-handle-serial-buffer-overflow
+<<<<<<< HEAD
+=======
   //Serial1.print("I am within available");
 
   // if (Serial.available() > 0 ) {
@@ -174,6 +190,7 @@ void loop (void) {
   //
   //    Serial1.write(c);
   //  }
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
   // If Serial.read() == -1, it means that head == tail, i.e. there are no bytes to read, that is, underflow happened
   //Serial1.print("b:");
@@ -329,6 +346,11 @@ void readFrameWithStartEndBytes()
 
           index++; // continue to read
 
+<<<<<<< HEAD
+  if ( m_accumByteCount == m_totalByteSize ) 
+  {
+ //sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
+=======
         }
     } // // the receive buffer is being filled
 
@@ -341,6 +363,7 @@ void showNewFrame() {
   if ( m_newFrameHasArrived == true ) {
 
     //sendLEDBytesToSlaves(m_totalReceiveBuffer,  m_totalByteSize );
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
     // print the ledBytes to the serial monitor via Serial1.
 
@@ -409,7 +432,11 @@ boolean checkEndBytesHaveArrived( byte totalReceiveBuffer[], int index, byte end
 
 void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
 {
+<<<<<<< HEAD
+ // use deviceA
+=======
   // use deviceA
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
   SPI.beginTransaction(SPISettingA);
 
   //https://forum.arduino.cc/index.php?topic=52111.0
@@ -475,7 +502,11 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
   SPI.endTransaction();
 
   // send the fourth group of data to the fourth slave:
+<<<<<<< HEAD
+ 
+=======
 
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
   SPI.beginTransaction(SPISettingD);
 
   digitalWrite(ss1, HIGH);

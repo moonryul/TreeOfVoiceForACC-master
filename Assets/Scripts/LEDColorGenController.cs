@@ -205,7 +205,7 @@ public class LEDColorGenController : MonoBehaviour
 
 
 
-        m_LEDArray = new byte[m_totalNumOfLEDs * 3];
+        m_LEDArray = new byte[m_totalNumOfLEDs * 3 * 2];
 
         //m_boidArray = new BoidData[ (int) m_BoidsNum ]; // for debugging
 
@@ -218,7 +218,7 @@ public class LEDColorGenController : MonoBehaviour
             // UnityEditor.EditorApplication.isPlaying = false;
             UnityEditor.EditorApplication.Exit(0);
 #else
-                   Application.Quit();
+            Application.Quit();
 #endif
         }
 
@@ -283,7 +283,7 @@ public class LEDColorGenController : MonoBehaviour
             //  UnityEditor.EditorApplication.isPlaying = false;
             UnityEditor.EditorApplication.Exit(0);
 #else
-                   Application.Quit();
+            Application.Quit();
 #endif
 
         }
@@ -755,9 +755,15 @@ public class LEDColorGenController : MonoBehaviour
 
         for (int i = 0; i < m_totalNumOfLEDs; i++)
         {
+<<<<<<< HEAD
+            //m_LEDArray[i * 3] = (byte)(255 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
+            //m_LEDArray[i * 3 + 1] = (byte)(255 * m_BoidLEDArray[i].Color[1]);
+            //m_LEDArray[i * 3 + 2] = (byte)(255 * m_BoidLEDArray[i].Color[2]);
+=======
             m_LEDArray[i * 3] = (byte)(255 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
             m_LEDArray[i * 3 + 1] = (byte)(255 * m_BoidLEDArray[i].Color[1]);
             m_LEDArray[i * 3 + 2] = (byte)(255 * m_BoidLEDArray[i].Color[2]);
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
 
             //Debug.Log(i + "th LED Position" + m_BoidLEDArray[i].Position.ToString("F4"));
@@ -808,7 +814,7 @@ public class LEDColorGenController : MonoBehaviour
             // UnityEditor.EditorApplication.isPlaying = false;
             UnityEditor.EditorApplication.Exit(0);
 #else
-                   Application.Quit();
+            Application.Quit();
 #endif
 
         }
@@ -819,6 +825,11 @@ public class LEDColorGenController : MonoBehaviour
 
         }
 
+<<<<<<< HEAD
+
+    } // Update()
+=======
+>>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
     } // Update()
 
