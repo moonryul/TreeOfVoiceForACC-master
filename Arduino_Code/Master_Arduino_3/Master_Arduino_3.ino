@@ -35,9 +35,9 @@ const int NumPixels2 = 44;
 const int NumPixels3 = 50;
 const int NumPixels4 = 52;
 
-const int m_totalNumOfPixels = NumPixels1 +  NumPixels2 + NumPixels3 +  NumPixels4 + 2;
-//const int m_totalNumOfPixels = NumPixels1 +  NumPixels2 + NumPixels3 +  NumPixels4;
-// include the start 3 bytes and the end 3 bytes
+//const int m_totalNumOfPixels = NumPixels1 +  NumPixels2 + NumPixels3 +  NumPixels4 + 2;
+const int m_totalNumOfPixels = NumPixels1 +  NumPixels2 + NumPixels3 +  NumPixels4;
+
 
 const int m_totalByteSize = m_totalNumOfPixels * 3;
 
@@ -60,15 +60,19 @@ byte m_totalReceiveBuffer[m_totalByteSize] ;
 byte m_startBytes[3]  = {0, 0, 0}; // This full black color indicates the start of a single frame of LEDs.
 byte m_endBytes[3]  = {255, 255, 255}; // This full white color indicates the end a single frame of LEDs.
 
+const byte m_startByte = 255;
+int m_pos;
 
 boolean m_newFrameHasArrived = false;
+boolean m_frameInProgress = false;
+
 // newFrameHasArrived is true when m_totalNumOfPixels of LED Pixel Data has arrived but not yet displayed or sent
 
-
-SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
-SPISettings SPISettingB (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 2
-SPISettings SPISettingC (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 3
-SPISettings SPISettingD (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 4
+//
+//SPISettings SPISettingA (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 1
+//SPISettings SPISettingB (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 2
+//SPISettings SPISettingC (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 3
+//SPISettings SPISettingD (4000000, MSBFIRST, SPI_MODE0); // 14MHz = speed; slave 4
 
 //SPISettings mySettting(speedMaximum, dataOrder, dataMode)
 
@@ -115,22 +119,26 @@ void setup (void) {
   //It sets SCK and MOSI low, and SS high.
   //It then enables SPI mode with the hardware in "master" mode. This has the side-effect of setting MISO as an input.
 
-<<<<<<< HEAD
+
   // Slow down the master a bit
+    // The default setting is SPI_CLOCK_DIV4,
+    
   //SPI.setClockDivider(SPI_CLOCK_DIV8);
- // SPI.setClockDivider(SPI_CLOCK_DIV16);
+
+  // SPI.setClockDivider(SPI_CLOCK_DIV16);
+
   // Sets the SPI clock divider relative to the system clock.
   // On AVR based boards, the dividers available are 2, 4, 8, 16, 32, 64 or 128.
   // The default setting is SPI_CLOCK_DIV4,
   // which sets the SPI clock to one-quarter the frequency of the system clock (4 Mhz for the boards at 16 MHz).
   // SPI.setBitOrder(MSBFIRST);
 
-  Serial1.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
-  Serial.begin(9600); // To read bytes from the PC Unity Script
-=======
+  //Serial1.begin(57600); // To write message to the serial monitor
+  Serial.begin(57600); // To read bytes from the PC Unity Script
+
   //Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
   // Serial.begin(115200); // To read bytes from the PC Unity Script
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
 
   //Define another serial port:
   //https://www.arduino.cc/reference/en/language/functions/communication/serial/
@@ -141,11 +149,6 @@ void setup (void) {
   // Connect the first USB cable  to Pin 0 and 1 by the ordinary method; Connect the second USB cable from the second
   // USB port in the PC to Pin 19 and 18; Also open another arduino IDE for the second serial port, Serial1.
   // Use the first arduino IDE to upload the arduino code, and use the second arduino IDE to report messages.
-
-  // Serial1.begin(115200); // Use Serial1 to send message to the Serial1 Monitor
-  Serial.begin(57600);
-  Serial1.begin(57600);
-
 
 }
 
@@ -177,229 +180,91 @@ void setup (void) {
 //and I can predict the number of bytes I should receive back. –
 
 void loop (void) {
-  //https://arduino.stackexchange.com/questions/1726/how-does-the-arduino-handle-serial-buffer-overflow
-<<<<<<< HEAD
-=======
-  //Serial1.print("I am within available");
 
-  // if (Serial.available() > 0 ) {
-  //
-  //    //Serial1.print("I am within available");
-  //
-  //    char c = Serial.read();
-  //
-  //    Serial1.write(c);
-  //  }
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
-
-  // If Serial.read() == -1, it means that head == tail, i.e. there are no bytes to read, that is, underflow happened
+  // If Serial.read() == -1 =oxff , it means that head == tail, i.e. there are no bytes to read, that is, underflow happened
   //Serial1.print("b:");
-  readFrameWithStartEndBytes(); // read until a new frame of LED data arrives
 
+  myReadByte(); // read a new byte changing the state of the reading process
 
-  showNewFrame(); // display the new frame of LED data that has arrived
+  if ( m_newFrameHasArrived ) { // a new frame has arrived; process it; This flag is changed in myReadByte()
+    showNewFrame(); // display the new frame of LED data that has arrived
+    m_newFrameHasArrived = false;
+  }
+
 
 } // loop()
 
-void readFrameWithStartEndBytes()
-{
-
-  static boolean startBytesHaveArrived = false; // The boolean variable indicating whether the start bytes of a frame has arrived and thus
+void myReadByte() {
 
   static int index = 0; // index of the buffer
 
   byte c; // received byte
 
+  int count = Serial.available();
+
+  if (count == 0) {
+    // currently m_newFrameHasArrived is false and m_frameInProgress is false
+    return;
+  }
+
+  // there are avaiable bytes in the incoming ring buffer
+  c = Serial.read(); // read the first byte in the incoming ring buffer
+
+  // there are two cases to handle: (1) the start byte HAS arrived (2) the start byte has NOT arrived
+  // These two states are indicated by m_frameInProgess
 
 
-  while ( Serial.available() && m_newFrameHasArrived == false ) //  read the serial port while newFrameHasArrived is false, that while
-    //a new frame of LED data has not arrived or has not been displayed or sent
-    //  During this time, do not read the serial port. Continue to read the port
-    //when the arrived frame of data has been displayed and thereby newFrameHasArrived beocmes false;
-    // while ( Serial.available() )
-  {
-    byte c = Serial.read(); // the read the first byte in the serial port buffer
-    m_totalReceiveBuffer[index] = c;
+  if ( !m_frameInProgress ) { // intially or when the frame has arrived, it is considered that the frame is not in progress
+    
+    // check if the start byte has arrived
 
-    if ( index == m_totalByteSize - 1) {
-      // the receive buffer is full without the end bytes arriving
-      // reset everything:
-      m_newFrameHasArrived == true;
-      //m_newFrameHasArrived == false;
+    if ( c == m_startByte ) {
+      m_frameInProgress = true; // when the start byte arrives, the frame in progress is true
+      m_pos = 0; // points to the beginning of the buffer  to read the current frame into
+      return;
 
-      if (index % 3  == 2) {
-        Serial1.print("index0 : ");
-        Serial1.print(index);
-        Serial1.print("     ");
-        Serial1.print(m_totalReceiveBuffer[index - 2] );
-        Serial1.print("     " );
-        Serial1.print(m_totalReceiveBuffer[index - 1] );
-        Serial1.print("     " );
-        Serial1.println(m_totalReceiveBuffer[index - 0] );
-      }
-      Serial1.println("??????????????????????????????????????????????????????");
-      index = 0;
-
-    } //  // the receive buffer is full without the end bytes arriving
+    }
 
     else {
+      // continue to read to find the start byte the next time myReadByte() is called
+      return;
 
-      // Serial1.println("the receive buffer is not full");
-      //      c = Serial.read(); // the read the first byte in the serial port buffer
-      //      m_totalReceiveBuffer[index] = c;
+    }
 
-      if ( startBytesHaveArrived  == true )  { // true when the start bytes has been arrived
+  } //if ( !m_frameInProgress )
 
-        // check if the end bytes for the current frame of data has arrived
+  else { // a frame is in progress, that is the start byte has arrived
 
-        if ( !checkEndBytesHaveArrived( m_totalReceiveBuffer, index, m_endBytes) ) { // if the end marker has not received => continue to read the next byte
-          if (index % 3  == 2) {
-            Serial1.print("index1 : ");
-            Serial1.print(index);
-            Serial1.print("     ");
-            Serial1.print(m_totalReceiveBuffer[index - 2] );
-            Serial1.print("     " );
-            Serial1.print(m_totalReceiveBuffer[index - 1] );
-            Serial1.print("     " );
-            Serial1.println(m_totalReceiveBuffer[index - 0] );
-          }
+    // add the read byte to the buffer at the empty location m_pos
+    m_totalReceiveBuffer[m_pos] = c;
 
-          index++; // continue to read
+    if ( m_pos == m_totalByteSize - 1) { // the buffer index points to the last position
+      // the receive buffer is full
+      m_newFrameHasArrived == true; // this flag is used to show the newly arrived frame
+      m_frameInProgress == false;   // this flat becomes true only when the start byte arrives
+      return;
+    } // the receive buffer is full
 
-        }
-        else { // the end bytes has just arrived at the index-2, index-1 and index of the totalReceiveBuffer
-          // check if the total number of bytes from the start bytes to  the end bytes is equal to m_totalByteSize.
-          if ( index == m_totalByteSize  - 1 ) {   // Is the current index of the buffer  the last element of the buffer when the end bytes has arrived
-            Serial1.println("************************************************");
-            if (index % 3  == 2) {
-              Serial1.print("index2 : ");
-              Serial1.print(index);
-              Serial1.print("     ");
-              Serial1.print(m_totalReceiveBuffer[index - 2] );
-              Serial1.print("     " );
-              Serial1.print(m_totalReceiveBuffer[index - 1] );
-              Serial1.print("     " );
-              Serial1.println(m_totalReceiveBuffer[index - 0] );
-            }
+    else {
+      m_pos ++ ; // go to the next location to fill in the buffer
+      return;
+    }//// a frame is in progress
 
-            m_newFrameHasArrived = true;
+  }// // a frame is in progres, that is,  the start byte has arrived
 
-            startBytesHaveArrived  = false; // "The frame InProgress" is made false after the end bytes arrived
-
-            index = 0; // The receive buffer is full so start to read into the first byte of the buffer in the next round
-
-          }// (the buffer fully filled)
-
-          else { // the total number of bytes from the start bytes to the end bytes is not equal to the required number of bytes for a correct frame.
-            // => ignore the read data and re-start the process of receiving a frame of LED data
-            if (index % 3  == 2) {
-              Serial1.print("index3 : ");
-              Serial1.print(index);
-              Serial1.print("     ");
-              Serial1.print(m_totalReceiveBuffer[index - 2] );
-              Serial1.print("     " );
-              Serial1.print(m_totalReceiveBuffer[index - 1] );
-              Serial1.print("     " );
-              Serial1.println(m_totalReceiveBuffer[index - 0] );
-            }
-
-            index = 0; // go to the start of the receive buffer            startBytesHaveArrived = false; // made false after a wrong number of data has been read from the start bytes to the end bytes
-
-          }
-        }  // else: the end bytes has just arrived
+}//myReadByte()
 
 
-      }// ( startBytesHaveArrived == true )
-
-      else // ( startBytesHaveArrived == false)
-        // check if the start bytes has arrived at the index-2, index-1, and index of the receive buffer
-        if ( checkStartBytesHaveArrived( m_totalReceiveBuffer, index, m_startBytes) ) {
-
-          startBytesHaveArrived = true; // made true when the start bytes has arrived
-          if (index % 3  == 2) {
-            Serial1.print("index4 : ");
-            Serial1.print(index);
-            Serial1.print("     ");
-            Serial1.print(m_totalReceiveBuffer[index - 2] );
-            Serial1.print("     " );
-            Serial1.print(m_totalReceiveBuffer[index - 1] );
-            Serial1.print("     " );
-            Serial1.println(m_totalReceiveBuffer[index - 0] );
-          }
-
-          index++; // continue to read
-
-        }
-
-        else { // the start bytes has not arrived
-          if (index % 3  == 2) {
-            Serial1.print("index5 : ");
-            Serial1.print(index);
-            Serial1.print("     ");
-            Serial1.print(m_totalReceiveBuffer[index - 2] );
-            Serial1.print("     " );
-            Serial1.print(m_totalReceiveBuffer[index - 1] );
-            Serial1.print("     " );
-            Serial1.println(m_totalReceiveBuffer[index - 0] );
-          }
-
-
-          index++; // continue to read
-
-<<<<<<< HEAD
-  if ( m_accumByteCount == m_totalByteSize ) 
-  {
- //sendLEDBytesToSlaves(m_totalRecieveBuffer,  m_totalByteSize );
-=======
-        }
-    } // // the receive buffer is being filled
-
-  } //  while ( Serial.available() && newFrameHasArrived == false )
-
-
-} // readWithStartEndMarkers()
 
 void showNewFrame() {
-  if ( m_newFrameHasArrived == true ) {
 
-    //sendLEDBytesToSlaves(m_totalReceiveBuffer,  m_totalByteSize );
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+  sendLEDBytesToSlaves(m_totalReceiveBuffer,  m_totalByteSize );
 
-    // print the ledBytes to the serial monitor via Serial1.
+  // print the ledBytes to the serial monitor via Serial1.
 
-    printLEDBytesToSerialMonitor(m_totalReceiveBuffer,  m_totalByteSize );
-
-    m_newFrameHasArrived = false;
-  } // ( m_newFrameHasArrived == true )
-
+ // printLEDBytesToSerialMonitor(m_totalReceiveBuffer,  m_totalByteSize );
 
 }// showNewFrame()
-
-boolean checkStartBytesHaveArrived( byte totalReceiveBuffer[], int index, byte startBytes[] ) {
-
-
-  if ( totalReceiveBuffer[index] == startBytes[2] && totalReceiveBuffer[index - 1] == startBytes[1]
-       && totalReceiveBuffer[index - 2]  == startBytes[0] ) {
-
-    return true;
-
-  }
-  else return false;
-
-}//checkStartBytesHaveArrived()
-
-boolean checkEndBytesHaveArrived( byte totalReceiveBuffer[], int index, byte endBytes[] ) {
-
-
-  if ( totalReceiveBuffer[index] == endBytes[2] && totalReceiveBuffer[index - 1] == endBytes[1]
-       && totalReceiveBuffer[index - 2]  == endBytes[0] ) {
-
-    return true;
-
-  }
-  else return false;
-
-}//checkEndBytesHaveArrived()
 
 
 //int HardwareSerial::available(void)
@@ -416,7 +281,7 @@ boolean checkEndBytesHaveArrived( byte totalReceiveBuffer[], int index, byte end
 //UART uses a ring buffer where head index is incremented when a new byte is written into the buffer
 //https://arduino.stackexchange.com/questions/11710/does-data-coming-in-on-arduino-serial-port-store-for-some-time
 //What happens if the buffer is full and my PC writes an extra character? Does the PC block until there is buffer space,
-//is an old character dropped or is the next character dropped? – Kolban Jun 19 '15 at 12:55
+//is an old character dropped or is the next character dropped? – Kolban Jun 19 '15 at 12: 55
 //2. The next(incoming) character is dropped.– Majenko♦ Jun 19 '15 at 13:17
 // SUM: Yes. The receive ring buffer is 64 bytes and will discard anything past that until the program reads them out of the buffer.
 
@@ -430,14 +295,10 @@ boolean checkEndBytesHaveArrived( byte totalReceiveBuffer[], int index, byte end
 //  totalRecieveBuffer[3 * i +2] = (byte)random(10, 255);
 
 
-void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
+void  sendLEDBytesToSlaves( byte * totalReceiveBuffer, int totalByteSize )
 {
-<<<<<<< HEAD
- // use deviceA
-=======
-  // use deviceA
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
-  SPI.beginTransaction(SPISettingA);
+
+  // SPI.beginTransaction(SPISettingA);
 
   //https://forum.arduino.cc/index.php?topic=52111.0
   //It is because they share the pins that we need the SS line. With multiple slaves,
@@ -450,108 +311,90 @@ void  sendLEDBytesToSlaves( byte *totalReceiveBuffer, int totalByteSize )
   // send the first group of data to the first slave:
 
   digitalWrite(ss1, LOW); // select the first SS line
-  digitalWrite(ss2, HIGH);
-  digitalWrite(ss3, HIGH);
-  digitalWrite(ss4, HIGH);
-  //digitalWrite(ss5, HIGH);
 
   // To send  a sequence of bytes to a slave arduiono via SPI, the sequence is marked by the start and the end
   // of the sequence with special bytes, m_startByte and m_endByte respectivley.
 
-  SPI.transfer( m_startBytes, 3);
-  SPI.transfer( &totalReceiveBuffer[3], group1ByteSize);
-  SPI.transfer( m_endBytes, 3);
+  SPI.transfer( m_startByte);
+  SPI.transfer( &totalReceiveBuffer[0], group1ByteSize);
+
 
   digitalWrite(ss1, HIGH);
 
-  SPI.endTransaction();
+  //SPI.endTransaction();
 
   // send the second group of data to the second slave:
-  SPI.beginTransaction(SPISettingB);
+  // SPI.beginTransaction(SPISettingB);
 
-  digitalWrite(ss1, HIGH);
+
   digitalWrite(ss2, LOW); // select the second SS Line
-  digitalWrite(ss3, HIGH);
-  digitalWrite(ss4, HIGH);
-  //digitalWrite(ss5, HIGH);
 
+  SPI.transfer( m_startByte);
+  SPI.transfer( &totalReceiveBuffer[group1ByteSize], group2ByteSize);
 
-  SPI.transfer( m_startBytes, 3);
-  SPI.transfer( &totalReceiveBuffer[3 + group1ByteSize], group2ByteSize);
-  SPI.transfer( m_endBytes, 3);
 
   digitalWrite(ss2, HIGH);
 
-  SPI.endTransaction();
+  //SPI.endTransaction();
 
   // send the third group of data to the third slave:
-  SPI.beginTransaction(SPISettingC);
+  //SPI.beginTransaction(SPISettingC);
 
-  digitalWrite(ss1, HIGH);
-  digitalWrite(ss2, HIGH);
+
   digitalWrite(ss3, LOW); // select the third SS line
-  digitalWrite(ss4, HIGH);
-  //digitalWrite(ss5, HIGH);
 
-  SPI.transfer( m_startBytes, 3);
-  SPI.transfer( &totalReceiveBuffer[3 + group1ByteSize + group2ByteSize], group3ByteSize);
-  SPI.transfer( m_endBytes, 3);
+  SPI.transfer( m_startByte);
+  SPI.transfer( &totalReceiveBuffer[group1ByteSize + group2ByteSize], group3ByteSize);
+
 
   digitalWrite(ss3, HIGH);
 
-  SPI.endTransaction();
+  //SPI.endTransaction();
 
   // send the fourth group of data to the fourth slave:
-<<<<<<< HEAD
- 
-=======
 
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
-  SPI.beginTransaction(SPISettingD);
+  // SPI.beginTransaction(SPISettingD);
 
-  digitalWrite(ss1, HIGH);
-  digitalWrite(ss2, HIGH);
-  digitalWrite(ss3, HIGH);
+  
   digitalWrite(ss4, LOW);   // select the fourth SS line
-  //digitalWrite(ss5, HIGH);
 
-  SPI.transfer( m_startBytes, 3);
-  SPI.transfer( &totalReceiveBuffer[3 + group1ByteSize + group2ByteSize  + group3ByteSize ], group4ByteSize );
-  SPI.transfer( m_endBytes, 3);
+  SPI.transfer( m_startByte);
+  SPI.transfer( &totalReceiveBuffer[group1ByteSize + group2ByteSize  + group3ByteSize ], group4ByteSize );
+
 
   digitalWrite(ss4, HIGH);
 
-  SPI.endTransaction();
+  // SPI.endTransaction();
 
   // If other libraries use the SPI (hardware resource)  from interrupts,
   // they will be prevented from accessing SPI until you call SPI.endTransaction().
 
-  // delay (10); // delay between LED activation; at least 1 ms
-  delay(2);
+  delay(50); // make the interrupt process slower so that there would be enough time to read the buffer
+
 } //  sendLEDBytesToSlaves(totalReceiveBuffer,  m_totalByteSize )
 
-
-void printLEDBytesToSerialMonitor( byte * totalReceiveBuffer,  int totalByteSize  )
-{
-
-  for (int i = 0; i < m_totalByteSize; i++) {
-
-    // print the received data from PC to the serial monitor via Serial1 of Mega
-    if ( i % 3 == 0) {
-      Serial1.print("r:");
-      Serial1.println(totalReceiveBuffer[i]);
-    }
-    else if ( i % 3 == 1) {
-      Serial1.print("g:");
-      Serial1.println(totalReceiveBuffer[i]);
-    }
-
-    else {
-      Serial1.print("b:");
-      Serial1.println(totalReceiveBuffer[i]);
-    }
-
-  }// for
-
-
-} //printLEDBytesToSerialMonitor( byte[] totalReceiveBuffer,  int m_totalByteSize  )
+//
+//void printLEDBytesToSerialMonitor( byte * totalReceiveBuffer,  int totalByteSize  )
+//{
+//
+//  for (int i = 0; i < m_totalByteSize; i++) {
+//
+//    // print the received data from PC to the serial monitor via Serial1 of Mega
+//    if ( i % 3 == 0) {
+//      Serial1.print("r:");
+//      Serial1.println(totalReceiveBuffer[i]);
+//    }
+//    else if ( i % 3 == 1) {
+//      Serial1.print("g:");
+//      Serial1.println(totalReceiveBuffer[i]);
+//    }
+//
+//    else {
+//      Serial1.print("b:");
+//      Serial1.println(totalReceiveBuffer[i]);
+//    }
+//
+//  }// for
+//
+//
+//} //printLEDBytesToSerialMonitor( byte[] totalReceiveBuffer,  int m_totalByteSize  )

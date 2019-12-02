@@ -755,15 +755,10 @@ public class LEDColorGenController : MonoBehaviour
 
         for (int i = 0; i < m_totalNumOfLEDs; i++)
         {
-<<<<<<< HEAD
-            //m_LEDArray[i * 3] = (byte)(255 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
-            //m_LEDArray[i * 3 + 1] = (byte)(255 * m_BoidLEDArray[i].Color[1]);
-            //m_LEDArray[i * 3 + 2] = (byte)(255 * m_BoidLEDArray[i].Color[2]);
-=======
-            m_LEDArray[i * 3] = (byte)(255 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
-            m_LEDArray[i * 3 + 1] = (byte)(255 * m_BoidLEDArray[i].Color[1]);
-            m_LEDArray[i * 3 + 2] = (byte)(255 * m_BoidLEDArray[i].Color[2]);
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
+            m_LEDArray[i * 3] =  (byte)(254 * m_BoidLEDArray[i].Color[0]); // Vector4 Color
+            m_LEDArray[i * 3 + 1] = (byte)(254 * m_BoidLEDArray[i].Color[1]);
+            m_LEDArray[i * 3 + 2] = (byte)(254 * m_BoidLEDArray[i].Color[2]);
 
 
             //Debug.Log(i + "th LED Position" + m_BoidLEDArray[i].Position.ToString("F4"));
@@ -824,12 +819,6 @@ public class LEDColorGenController : MonoBehaviour
             m_LEDSenderHandler.Invoke(m_LEDArray);
 
         }
-
-<<<<<<< HEAD
-
-    } // Update()
-=======
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
 
     } // Update()
 
