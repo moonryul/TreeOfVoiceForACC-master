@@ -18,10 +18,10 @@ volatile boolean m_process_it = false;
 volatile boolean m_frameInProgess = false;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(57600);
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
 
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+  //SPI.setClockDivider(SPI_CLOCK_DIV16);
   pinMode(PIXIEPIN, OUTPUT);
   pinMode(MISO, OUTPUT); // this is needed to send bytes to the master
 
@@ -70,7 +70,8 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
 
   } //  if ( !m_process_it )
 
-  // now the process_it is false: loop() is reading the buffer => ignore the incoming byte
+  // now the process_it is true: loop() is reading the buffer => ignore the incoming byte
+   // until loop() has read the buffer and turns m_process_it false
   return;
 
 } // ISR

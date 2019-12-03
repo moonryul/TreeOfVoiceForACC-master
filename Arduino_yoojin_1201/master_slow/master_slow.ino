@@ -78,13 +78,13 @@ void setup (void) {
   //It then enables SPI mode with the hardware in "master" mode. This has the side-effect of setting MISO as an input.
 
   // Slow down the master a bit
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+ SPI.setClockDivider(SPI_CLOCK_DIV16);
   // The default setting is SPI_CLOCK_DIV4,
   // which sets the SPI clock to one-quarter the frequency of the system clock (4 Mhz for the boards at 16 MHz).
 
   //Serial1.begin(9600); // Use Serial1 to send message to the Serial1 Monitor
 
-  Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
+ // Serial.begin(9600); // increase the serial comm speed; Unity Script also sets this speed
   //Serial.begin(115200); // To read bytes from the PC Unity Script
 
   //Define another serial port:
@@ -102,19 +102,19 @@ void setup (void) {
     LED1[3*i+2]=0;
   }
   for (int i = 0; i < group2ByteSize/3; i++) {
-    LED2[3*i+0]=250;
-    LED2[3*i+1]=0;
+    LED2[3*i+0]=0;
+    LED2[3*i+1]=250;
     LED2[3*i+2]=0;
   }
   for (int i = 0; i < group3ByteSize/3; i++) {
     LED3[3*i+0]=0;
-    LED3[3*i+1]=250;
-    LED3[3*i+2]=0;
+    LED3[3*i+1]=0;
+    LED3[3*i+2]=250;
   }
   for (int i = 0; i < group4ByteSize/3; i++) {
-    LED4[3*i+0]=0;
-    LED4[3*i+1]=0;
-    LED4[3*i+2]=250;
+    LED4[3*i+0]=250;
+    LED4[3*i+1]=250;
+    LED4[3*i+2]=0;
   }
 }
 

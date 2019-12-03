@@ -18,10 +18,10 @@ volatile boolean m_process_it = false;
 volatile boolean m_frameInProgess = false;
 
 void setup() {
-  Serial.begin(9600);
+ //Serial.begin(57600);
   pixieSerial.begin(115200); // Pixie REQUIRES this baud rate
 
-  SPI.setClockDivider(SPI_CLOCK_DIV16);
+ // SPI.setClockDivider(SPI_CLOCK_DIV16);
   pinMode(PIXIEPIN, OUTPUT);
   pinMode(MISO, OUTPUT); // this is needed to send bytes to the master
 
@@ -86,15 +86,15 @@ void loop() {
     for (int i = 0; i < NUMPIXELS1; i++)
     {
       strip.setPixelColor(i, m_buffer[ i * 3 + 0], m_buffer[i * 3 + 1], m_buffer[i * 3 + 2] );
-      Serial.print(i);
-      Serial.print("th  ");
-      Serial.print("  r:  ");
-      Serial.print(m_buffer[i * 3 + 0]);
-      Serial.print("  g:  ");
-
-      Serial.print(m_buffer[i * 3 + 1]);
-      Serial.print("  b:  ");
-      Serial.println(m_buffer[i * 3 + 2]);
+//      Serial.print(i);
+//      Serial.print("th  ");
+//      Serial.print("  r:  ");
+//      Serial.print(m_buffer[i * 3 + 0]);
+//      Serial.print("  g:  ");
+//
+//      Serial.print(m_buffer[i * 3 + 1]);
+//      Serial.print("  b:  ");
+//      Serial.println(m_buffer[i * 3 + 2]);
     }
 
     strip.show(); // show command has been  recieved
