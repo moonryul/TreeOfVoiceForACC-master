@@ -114,58 +114,25 @@ public class LEDMasterController : MonoBehaviour
 
         //m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs + 2;
         m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs;
-<<<<<<< HEAD
-
-        m_LEDArray = new byte[m_LEDCount * 3]; // 280*3 = 840 < 1024
-
-
-        // prepare test led array
-
-
-        int m_index = 0;
-
-=======
        
         m_LEDArray = new byte[m_LEDCount * 3]; // 186*3 < 1024
        
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
         // define an action
         m_updateArduino = () => { 
           
             try
             { //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
 
-                //Yes, the Write methods do block , until all data have been passed from the serial port driver to the UART FIFO.
-                //Usually, this is not a problem.It will not block "forever," just for as long as it takes.
-                //For example, if you were to send a 2K byte string, at 9600 bps, the write method would take about 2 seconds to return.
-
-                //Write(byte[] buffer, int offset, int count);
-                if(m_threadCounter > m_arduinoSendPeriod )
-                {
-                    m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
-                    Array.Clear(m_LEDArray, 0, m_LEDArray.Length);
-                    m_threadCounter = 0;
-                }
-                else
-                {
-                    m_threadCounter++;
-                }
                
+                    m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
+                               
 
 
             }
             catch (Exception ex)
             {
-                Debug.Log("Error:" + ex.ToString());
-<<<<<<< HEAD
-                //#if UNITY_EDITOR
-                //                // Application.Quit() does not work in the editor so
-                //                // UnityEditor.EditorApplication.isPlaying = false;
-                //                UnityEditor.EditorApplication.Exit(0);
-                //#else
-                //                   Application.Quit();
-                //#endif
-=======
+
 #if UNITY_EDITOR
                 // Application.Quit() does not work in the editor so
                 UnityEditor.EditorApplication.isPlaying = false;
@@ -173,7 +140,7 @@ public class LEDMasterController : MonoBehaviour
 #else
                 Application.Quit();
 #endif
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
 
             }
 
@@ -183,14 +150,9 @@ public class LEDMasterController : MonoBehaviour
 
         };
 
-<<<<<<< HEAD
-
-        m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
-                                                                 // Thread state = unstarted
-=======
         // m_Thread = new Thread(new ThreadStart(m_updateArduino)); // ThreadStart() is a delegate (pointer type)
                                                          // Thread state = unstarted
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
 
     }// void Start()
 
@@ -224,59 +186,8 @@ public class LEDMasterController : MonoBehaviour
                 Debug.Log(" the previous run of the thread has finished");
 
 
-<<<<<<< HEAD
-        if (!m_Thread.IsAlive)
-        {
-
-            try
-            {
-                // use the new LED array for the new invocation of the sending thread
-
-
-                Debug.Log(" send LED array to arduino");
-
-                //for (int i = 0; i < m_LEDCount; i++)
-                //{
-                //    ledArray[3 * i] = 0;
-                //    ledArray[3 * i + 1] = 0;
-                //    ledArray[3 * i + 2] = 0;
-
-                //}
-
-                //ledArray[3 * m_index + 0] = 255;
-                //ledArray[3 * m_index + 1] = 0;
-                //ledArray[3 * m_index + 2] = 0;
-
-                //m_index++;
-                //if (m_index == m_LEDCount)
-                //{
-                //    m_index = 0; // wrap the index
-                //}
-                for (int i = 0; i < m_LEDCount; i++)
-                {
-                    m_LEDArray[6 * i] = 250;
-                    m_LEDArray[6 * i + 1] = 255;
-                    m_LEDArray[6 * i + 2] = 0;
-                    m_LEDArray[6 * i + 3] = 255;
-                    m_LEDArray[6 * i + 4] = 0;
-                    m_LEDArray[6 * i + 5] = 255;
-
-                }
-                // m_LEDArray = ledArray;
-=======
                 try
                 {
-                    // use the new LED array for the new invocation of the sending thread
-
-
-
-                    //m_LEDArray[0] = 0;
-                    //m_LEDArray[1] = 0;
-                    //m_LEDArray[2] = 0;
-
-                    //m_LEDArray[3 * (m_LEDCount - 1) + 0] = 255;
-                    //m_LEDArray[3 * (m_LEDCount - 1) + 1] = 255;
-                    //m_LEDArray[3 * (m_LEDCount - 1) + 2] = 255;
 
 
                     for (int i = 0; i < m_LEDCount; i++)
@@ -287,13 +198,7 @@ public class LEDMasterController : MonoBehaviour
 
                     }
 
-                    //for (int i = 1; i < (m_LEDCount - 1); i++)
-                    //{
-                    //    m_LEDArray[3 * i]     = ledArray[3 * (i - i)];
-                    //    m_LEDArray[3 * i + 1] = ledArray[3 * (i - i)  + 1];
-                    //    m_LEDArray[3 * i + 2] = ledArray[3 * (i - i) + 2];
-                    //}
-
+                    
                     //  m_LEDArray = ledArray; // struc array: array is a reference type derived from
                     // the abstract base type Array; they use foreach iteration
 
@@ -308,7 +213,7 @@ public class LEDMasterController : MonoBehaviour
 
 
                 }
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
 
                 catch (Exception ex)
                 {
@@ -326,22 +231,12 @@ public class LEDMasterController : MonoBehaviour
 
             } // The thread is not alive
 
-<<<<<<< HEAD
-            catch (Exception ex)
-            {
-                Debug.Log(" Exception =" + ex.ToString());
-                //#if UNITY_EDITOR
-                //                // Application.Quit() does not work in the editor so
-                //                // UnityEditor.EditorApplication.isPlaying = false;
-                //                UnityEditor.EditorApplication.Exit(0);
-                //#else
-                //                   Application.Quit();
-                //#endif
-=======
+            
+
             else
             { // the thread is alive
                 Debug.Log("Thread is alive; Wait until it finishes and the arrived array of led bytes is discarded");
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
+
 
                 // The sending thread is still busy sending  the previous LED array =>: The arrived LED array is discarded
             }
@@ -384,13 +279,7 @@ public class LEDMasterController : MonoBehaviour
     void Update()
     {
 
-<<<<<<< HEAD
-    }
-=======
 
     }
-    
+  
 }//public class LEDMasterController 
->>>>>>> f1f7ed607003812801d68a804b565d509d4dc896
-
-}//public class LEDMasterControlle
