@@ -166,7 +166,10 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 	// apply three boid rules using neighbors
 
 
-	float minDist = _SamplingRadius ; // 0.05 m = 5cm;
+	//float minDist = _SamplingRadius ; // 0.05 m = 5cm;
+
+
+	float minDist = _MaxDomainRadius * 0.1 ; // 10 m * 0.1 = 1m;
 
 	int minIndex = -1;
 
@@ -175,12 +178,18 @@ void SampleLEDColors(uint3 DTid : SV_DispatchThreadID)
 	float3 LEDBoidPosFromYAxis = float3(pBoidLED.position.x, 0.0, pBoidLED.position.z);
 	float LEDBoidRadiusFromYAxis = length(LEDBoidPosFromYAxis);
 
+	// realRadius: scaledRadius = radiusOfLEDPlane (=2): _SamplingRadius
+
+	float scaledRadius = LEDBoidRadiusFromYAxis * _SamplingRadius / 2.0;
+
 	//  compute the cylinderic coordinate of nBoid to sample to get the color of pBoidLED
 
    // get the y (height) of nBoid whose color to sample as the color of pBoidLED
 	// y^2 + LEDBoidRadiusFromYAxis = _MaxDomainRadius^2
 
-	float yCoord = sqrt(_MaxDomainRadius * _MaxDomainRadius - LEDBoidRadiusFromYAxis * LEDBoidRadiusFromYAxis);
+	//float yCoord = sqrt(_MaxDomainRadius * _MaxDomainRadius - LEDBoidRadiusFromYAxis * LEDBoidRadiusFromYAxis);
+
+	float yCoord = sqrt(_MaxDomainRadius * _MaxDomainRadius - scaledRadius * scaledRadius);
 
 	// get the phi coordinate;
 

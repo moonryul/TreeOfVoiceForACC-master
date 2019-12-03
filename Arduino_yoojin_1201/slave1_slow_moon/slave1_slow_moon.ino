@@ -43,10 +43,18 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
 
 
       if ( c == 255 ) {
-        m_pos = 0;
+        m_pos = m_bufferSize - 1; // insert bytes starting from the end of the buffer, so that the end parts of the LED go into 
+                                  // the chain first
         m_frameInProgess = true;
         return;
       }
+
+//      
+//      if ( c == 255 ) {
+//        m_pos = 0;
+//        m_frameInProgess = true;
+//        return;
+//      }
       else { // continue to read until the start byte arrives while frameInPgoress is false
         return;
       }
@@ -55,17 +63,31 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
     else  { // m_frameInProgess is true: the start byte has arrived
 
       m_buffer[m_pos] = c;
+//
+//      if ( m_pos == m_bufferSize - 1) {
+//        m_process_it = true;
+//        m_frameInProgess = false;
+//        return;
+//      } // if
 
-      if ( m_pos == m_bufferSize - 1) {
+
+      if ( m_pos == 0) { // the buffer is full
         m_process_it = true;
         m_frameInProgess = false;
         return;
       } // if
-
+      
       else {
-        m_pos ++; // the next location to fill in the buffer
+        m_pos--; // the next location to fill in the buffer
         return;
       }
+
+//       else {
+//        m_pos ++; // the next location to fill in the buffer
+//        return;
+//      }
+
+      
     } // else: m_frameInProgess is true: the start byte has arrived
 
   } //  if ( !m_process_it )

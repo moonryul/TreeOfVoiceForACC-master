@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using Random = UnityEngine.Random;
 
-public class LEDColorGenController : MonoBehaviour
+public class LEDColorGenControllerCoord : MonoBehaviour
 {
 
     //ComputeBuffer m_BoidLEDRenderDebugBuffer;
@@ -36,8 +36,11 @@ public class LEDColorGenController : MonoBehaviour
 
     public struct BoidLEDData
     {
+        public List<int> LEDID; // (chainNo, ledNo)
+        public List<int> boxCoord; // (i,j)
+        public Vector2 LEDCoord; // (x,y)
         public Matrix4x4 BoidFrame;
-        public Vector3 Position; //
+        public Vector3  Position; //
         public Vector3 HeadDir; // heading direction of the boid on the local plane
         public Vector4 Color;         // RGBA color
         public Vector3 Scale;
@@ -80,7 +83,7 @@ public class LEDColorGenController : MonoBehaviour
     public int m_totalNumOfLEDs; // computed within script
 
 
-    public float m_samplingRadius = 5f; //10cm
+    public float m_samplingRadius = 0.05f; //10cm
 
     public float m_LEDChainHeight = 9; // the height of the LED chain 
 
@@ -160,8 +163,13 @@ public class LEDColorGenController : MonoBehaviour
     StreamWriter m_writer;
     FileStream m_oStream;
 
+    string m_pathToCoord;
+
     private void Awake()
     {// initialize me
+
+        //string path = @"c:\temp\MyTest.txt";
+        //장열 '\' (백슬래쉬) 를 문자열 내에서 두번 써야 하지만 @ 를 써서 한번만 쓰도록 합니다.
 
         //// DEBUG code
         //string fileName = "LEDBoidGen";
@@ -169,7 +177,7 @@ public class LEDColorGenController : MonoBehaviour
         ////"yyyy.MM.dd.HH.mm.ss"
         //string fileIndex = System.DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
 
-        //string path = "Assets/Resources/DebugFiles/" + fileName + fileIndex + ".txt";
+        m_pathToCoord = "Assets/Resources/LEDCoordFile.txt";
 
 
         //File.CreateText(path).Dispose();
@@ -313,12 +321,79 @@ public class LEDColorGenController : MonoBehaviour
 
         m_BoidLEDBuffer = new ComputeBuffer(m_totalNumOfLEDs, Marshal.SizeOf(typeof(BoidLEDData)));
 
-        m_BoidLEDArray = new BoidLEDData[m_totalNumOfLEDs];
+        m_BoidLEDArray = new BoidLEDData[m_totalNumOfLEDs]; // read info from LEDCoordFile
 
         //For each kernel we are setting the buffers that are used by the kernel, so it would read and write to those buffers
 
         // For the part of boidArray that is set by data are filled by null. 
         // When the array boidArray is created each element is set by null.
+
+
+        // Read the coordinates of each LED from the text file.
+
+        string[] lines = File.ReadAllLines( m_pathToCoord );
+
+        Debug.Assert(lines.Length == m_totalNumOfLEDs,
+                      "the lines of the CoordFile should be equal to the number of LEDs");
+
+        int LEDindex = 0;
+
+
+
+        //public struct BoidLEDData
+        //{
+        //    public Vector2 LEDID; // (chainNo, ledNo)
+        //    public Vector2 boxCoord; // (i,j)
+        //    public Vector2 LEDCoord; // (x,y)
+        //    public Matrix4x4 BoidFrame;
+        //    public Vector3 Position; //
+        //    public Vector3 HeadDir; // heading direction of the boid on the local plane
+        //    public Vector4 Color;         // RGBA color
+        //    public Vector3 Scale;
+        //    public int WallNo;      // the number of the wall whose boids defined the light sources of the branch cylinder
+        //                            // 0=> the inner  circular wall. 
+        //                            // 1 => the outer circular wall;
+        //    public int NearestBoidID;
+        //    public int NeighborCount;
+        //}
+
+
+
+        foreach (string line in lines) // line = (3,43):((0,2),(7,5.8)) 
+        {
+            string[] col = line.Split(':'); //  col[0] = (3,43); col[1] = ( (0,2), (7,5.8) )
+            string[] LEDID = col[0].Split(','); // ledID = [3, 43]; 
+            string[] globalCoord = col[1].Split(','); // globalCoord = [ (0,2), (7,5.8) ]
+            string[] boxID = globalCoord[0].Split(','); // frame = [0,2]
+            string[] localCoord = globalCoord[1].Split(','); // localCoord = [7, 5.8]
+
+            m_BoidLEDArray[LEDindex].LEDID = new List<int> {System.Convert.ToInt32(LEDID[0]),
+                                                            System.Convert.ToInt32(LEDID[1]) };
+
+            // LEDID starts from (1,1)
+            // 
+
+            m_BoidLEDArray[LEDindex].boxCoord = new List<int> { System.Convert.ToInt32(boxID[0]),
+                                                                System.Convert.ToInt32(boxID[1]) };
+            // boxCoord starts from 0
+            m_BoidLEDArray[LEDindex].LEDCoord = new Vector2(System.Convert.ToInt32(localCoord[0]),
+                                                           System.Convert.ToInt32(localCoord[1]));
+            // LEDCoord starts from 0
+            LEDindex++;
+
+        }// foreach (string line in lines) 
+
+
+        // boxNumx = Convert.ToInt32( frame[0]);
+        // boxNumy = Convert.ToInt32( frame[1]);
+        // x= Convert.ToSingle( localCoord[0] );
+        // y =  Convert.ToSingle( localCoord[1] );
+
+        //    // process col[0], col[1], col[2]
+        //}
+
+        // System.Convert.ToInt32(string)
+        // System.Convert.ToSingle(string)
 
         // create a m_BoidLEDArray to link to m_BoidLEDBuffer:
         SetBoidLEDArray(m_BoidLEDArray); // THe Boid LEDs array is defined without their colors
@@ -437,7 +512,6 @@ public class LEDColorGenController : MonoBehaviour
             // 
 
             Vector3 ZAxis = Vector3.Cross(XAxis, YAxis);  // the forward direction 
-
 
             Matrix4x4 boidFrame = new Matrix4x4();
             // XAxis, YAxis, ZAxis become the first, second, third columns of the boidFrame matrix
@@ -577,49 +651,291 @@ public class LEDColorGenController : MonoBehaviour
 
             // Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
 
-        } // for  (int i )
 
-        // m_writer.Close();
+            float radius;
+            float theta, phi;
+
+            Arange a chain of 40 LEDs(with interval of 50cm) along the the logarithmic spiral
+           r = a * exp(b * theta), where 0 <= theta <= 3 * 2pi:
+            band with radii 1m and 0.85m three rounds. Arrange another chain along the circle band
+           with radii 0.85m and 0.7m  three rounds, each round with differnt radii.
+        Two chains are arranged so that their LEDs are placed in a zigzag manner.
+
+        x = r * cos(th); y = r * sin(th)
+         x = a * exp(b * th)cos(th), y = a * exp(b * th)sin(th)
+         dr / dth = b * r;
+
+        conditions: r0 = a exp(b 0) = 0.85; r1 = a exp(b * 3 * 2pi)
+         r0 = a exp(0) = a; a = r0; r1 = 0.85 * exp(b * 4pi) ==> b = the radius growth rate.
+
+         exp(b * 4pi) = r1 / a; b * 6pi = ln(r1 / a).b = ln(r1 / a) / 6pi;
+
+            L(r(th), th0, th) = a(root(1 + b ^ 2) / b)[exp(b * th) - exp(b * th0)]
+           = root(1 + b ^ 2) / b * [a * exp(b * th) - a * exp(th0)]
+         L(r(th), th0, th_i) = root(1 + b ^ 2) / b * [r(th_i) - r(th0)] = i * 0.5, 0.5 = led Interval
+           => the value of th_i can be determined.
+
+         The ith LED will be placed at location(r_i, th_i) such that  L(r(th_i), th0, th_i) = 0.5 * i, r_i = a * exp(b * th_i), 
+          i = 0 ~39
+
+        Define the parameters a and b of the logarithmic spiral curve r = a * exp(b * th).
+
+        float r0 = m_startingRadiusOfInnerChain;  // a1  in r = a1 * exp(b1 * th) is set so that the radius r0 is 0.7 when th =0;
+            float r1 = m_endingRadiusOfInnerChainThreeTurns; // r1 = a1 exp (b1* 3 * 2pi)
+
+            float r2 = m_startingRadiusOfOuterChain; ; //  a2  in r = a2 * exp( b2 * th); b2 is set so that r is r2 when th =0;
+            float r3 = m_endingRadiusOfOuterChainThreeTurns; // r3 = a2* exp(b2* 3 * 2pi)
+
+            float a1 = r0;
+            float b1 = Mathf.Log(r1 / a1) / (6 * M_PI);
+
+            float a2 = r2;
+            float b2 = Mathf.Log(r3 / a2) / (6 * M_PI);
 
 
-        //Debug.Log("Fourth Chain:");
-        //for (int i = 0; i < m_numOfChain4; i++)
-        //{
-        //    // set the head direction of the boid:  direction angle on xz plane
-
-        //    float th_i = GetAngularPositionOfLED(a2, b2, m_startAngleOfChain4, ledInterval,i);
-        //    float r_i = a2 * Mathf.Exp(b2 * th_i);
 
 
-        //    Debug.Log(i + "th LED Ploar POS (th,r):" + new Vector2( th_i * 180 / M_PI, r_i).ToString("F4"));
+            //Debug.Log("Inner Chain:");
 
-        //    m_BoidLEDArray[m_numOfChain1 + m_numOfChain2 + m_numOfChain3 +  i].HeadDir = new Vector3(Mathf.Cos(th_i), 0.0f, Mathf.Sin(th_i));
+            //float LEDChainLength = 0;
 
-        //    Debug.Log(i + "th LED HeadDir:" + m_BoidLEDArray[m_numOfChain1 + m_numOfChain2 + m_numOfChain3 + i].HeadDir.ToString("F4"));
+            //for (int i = 0; i < m_firstChain; i++)
+            //{
+            //    // set the head direction of the boid:  direction angle on xz plane
 
-        //    Vector3 ledPos = r_i * m_BoidLEDArray[m_numOfChain1 + +m_numOfChain2 + m_numOfChain3 + i].HeadDir;
+            //    //  thi_i: the angle on the local coordinate system:
 
-        //    m_BoidLEDArray[m_numOfChain1 + +m_numOfChain2 + m_numOfChain3 + i].Position = ledPos;
+            //    float th_i = GetAngularPositionOfLED(a1, b1, 0.0f, ref LEDChainLength,
+            //                                         m_LEDInterval, i);
+            //    float r_i = a1 * Mathf.Exp(b1 * th_i);
 
-        //    float initScaleX = Random.Range(MinCylinderRadius, MaxCylinderRadius); // 0.5 ~ 1.0
-        //                                                                           //float initScaleY = Random.Range(MinCylinderRadius, MaxCylinderRadius);
-        //                                                                           //float initScaleZ = Random.Range(MinCylinderRadius, MaxCylinderRadius);
+            //    float th_i_g = th_i + (M_PI / 180) * m_beginFromInChain1;
 
-        //    m_BoidLEDArray[m_numOfChain1 + m_numOfChain2 + m_numOfChain3 + i].Scale = new Vector3(initScaleX, initScaleX, initScaleX);
+            //    //Debug.Log(i + "th LED Ploar POS (th,r) [global coord]:" + new Vector2(th_i_g * 180 / M_PI, r_i).ToString("F4"));
+
+            //    m_BoidLEDArray[i].Position = new Vector3(r_i * Mathf.Cos(th_i_g), m_LEDChainHeight, r_i * Mathf.Sin(th_i_g));
+
+            //    // Set the rotation frame of LED boid at m_boidLEDArray[i].Position:
+
+            //    // Each boid is located on on the tangent of the sphere moving foward on the tagent plane;
+            //    // The boid frame follows the Unity convention where the x is to the right on the tangent plane,
+            //    //  the z is forward direction on the tangent plane, and the y axis is the up direction, which is
+            //    // perpendicular to the tangent plane;
+            //    // The up (y, back side) direction of the boid is negative to the  normal of the 2D circle mesh
+            //    // of the boid; The normal direction points to the center of the sphere; The light is within
+            //    // the sphere.
+
+            //    // The "forward" in OpenGL is "-z".In Unity forward is "+z".Most hand - rules you might know from math are inverted in Unity
+            //    //    .For example the cross product usually uses the right hand rule c = a x b where a is thumb, b is index finger and c is the middle
+            //    //    finger.In Unity you would use the same logic, but with the left hand.
+
+            //    //    However this does not affect the projection matrix as Unity uses the OpenGL convention for the projection matrix.
+            //    //    The required z - flipping is done by the cameras worldToCameraMatrix.
+            //    //    So the projection matrix should look the same as in OpenGL.
+
+            //    // Compute the Unity affine frame for each boid on the sphere (uses the left hand rule).
+            //    // The direction of the Position is used as the up direction [Y axis) (points to the dorsal part)
+            //    // of the boid. The Z axis is set to the perpendicular to the plane formed by the Y axis
+            //    // and the world UP vector  Vector3.up(0,1,0), and points the local forward of the boid. 
+            //    // The z axis is the head (moving) direction  of the boid. The X axis is the local right 
+            //    // of the 2D circle boid.
+
+
+            //    Vector3 position = m_BoidLEDArray[i].Position;
+            //    Vector3 YAxis = position.normalized; // The direction vector of the boid
+            //                                         // is considered as the up vector of the boid frame.
+
+            //    Vector3 XAxis = Vector3.Cross(YAxis, Vector3.up); // XAxis = perpendicular to the
+            //    // plane formed by the boid up and the global up. It is the rightward basis
+            //    // left hand rule
+            //    // 
+
+            //    Vector3 ZAxis = Vector3.Cross(XAxis, YAxis);  // the forward direction 
+
+            //    Matrix4x4 boidFrame = new Matrix4x4();
+            //    // XAxis, YAxis, ZAxis become the first, second, third columns of the boidFrame matrix
+            //    boidFrame.SetColumn(0, new Vector4(XAxis[0], XAxis[1], XAxis[2], 0.0f));
+            //    boidFrame.SetColumn(1, new Vector4(YAxis[0], YAxis[1], YAxis[2], 0.0f));
+            //    boidFrame.SetColumn(2, new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f));
+            //    boidFrame.SetColumn(3, new Vector4(position[0], position[1], position[2], 1.0f));
+
+            //    m_BoidLEDArray[i].BoidFrame = boidFrame; // affine frame
+
+
+
+            //    m_BoidLEDArray[i].HeadDir = ZAxis;
+
+
+            //    float initRadiusX = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius); // 0.1 ~ 0.3
+            //    float initRadiusY = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
+            //    float initRadiusZ = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
+
+
+            //    // m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusY, initRadiusZ);
+            //    m_BoidLEDArray[i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX);
+
+            //    //m_writer.WriteLine(  i+ "th LED POS:" + m_BoidLEDArray[i].Position);
+            //    //m_writer.WriteLine(i + "th LED frame:\n" + m_BoidLEDArray[i].BoidFrame);
+
+            //} // for  (int i )
+
+            ////Debug.Log("Second Chain:");
+            ////for (int i = 0; i < m_numOfChain2; i++)
+            ////{
+            ////    // set the head direction of the boid:  direction angle on xz plane
+
+            ////    float th_i = GetAngularPositionOfLED(a1, b1, m_startAngleOfChain2, ledInterval,i);
+            ////    float r_i = a1 * Mathf.Exp(b1 * th_i);
+
+            ////    Debug.Log(i + "th LED Ploar POS (th,r):" + (new Vector2(th_i * 180 / M_PI, r_i) ).ToString("F4") );
+
+            ////    m_BoidLEDArray[m_numOfChain1 + i].HeadDir = new Vector3(Mathf.Cos(th_i), 0.0f, Mathf.Sin(th_i));
+
+
+            ////    Debug.Log(i + "th LED HeadDir:" + m_BoidLEDArray[m_numOfChain1 + i].HeadDir.ToString("F4"));
+
+            ////    Vector3 ledPos = r_i * m_BoidLEDArray[m_numOfChain1 + i].HeadDir;
+
+            ////    m_BoidLEDArray[m_numOfChain1 + i].Position = ledPos;
+
+            ////    float initScaleX = Random.Range(MinCylinderRadius, MaxCylinderRadius); // 0.5 ~ 1.0
+            ////                                                                           //float initScaleY = Random.Range(MinCylinderRadius, MaxCylinderRadius);
+            ////                                                                           //float initScaleZ = Random.Range(MinCylinderRadius, MaxCylinderRadius);
+
+            ////    m_BoidLEDArray[m_numOfChain1 + i].Scale = new Vector3(initScaleX, initScaleX, initScaleX);
+
+
+            ////    Debug.Log(i + "th LED POS:" + ledPos.ToString("F4") );
+
+            ////} // for  (int i )
+
+            //Debug.Log("Outer Chain:");
+            //LEDChainLength = 0;
+
+            //for (int i = 0; i < m_secondChain + m_thirdChain + m_fourthChain; i++)
+            //{
+            //    // set the head direction of the boid:  direction angle on xz plane
+
+            //    float th_i = GetAngularPositionOfLED(a2, b2, 0.0f, ref LEDChainLength,
+            //                                         m_LEDInterval, i);
+            //    float r_i = a2 * Mathf.Exp(b2 * th_i);
+
+            //    float th_i_g = th_i + (M_PI / 180) * m_beginFromInChain2;
+
+            //    // Debug.Log(i + "th LED Ploar POS (th,r):" + new Vector2(th_i_g * 180 / M_PI, r_i).ToString("F4"));
+
+            //    m_BoidLEDArray[m_firstChain + i].Position = new Vector3(r_i * Mathf.Cos(th_i_g), m_LEDChainHeight, r_i * Mathf.Sin(th_i_g));
+
+            //    // Set the rotation frame of LED boid at m_boidLEDArray[i].Position:
+
+            //    // Each boid is located on on the tangent of the sphere moving foward on the tagent plane;
+            //    // The boid frame follows the Unity convention where the x is to the right on the tangent plane,
+            //    //  the z is forward direction on the tangent plane, and the y axis is the up direction, which is
+            //    // perpendicular to the tangent plane;
+            //    // The up (y, back side) direction of the boid is negative to the  normal of the 2D circle mesh
+            //    // of the boid; The normal direction points to the center of the sphere; The light is within
+            //    // the sphere.
+
+            //    // The "forward" in OpenGL is "-z".In Unity forward is "+z".Most hand - rules you might know from math are inverted in Unity
+            //    //    .For example the cross product usually uses the right hand rule c = a x b where a is thumb, b is index finger and c is the middle
+            //    //    finger.In Unity you would use the same logic, but with the left hand.
+
+            //    //    However this does not affect the projection matrix as Unity uses the OpenGL convention for the projection matrix.
+            //    //    The required z - flipping is done by the cameras worldToCameraMatrix.
+            //    //    So the projection matrix should look the same as in OpenGL.
+
+            //    // Compute the Unity affine frame for each boid on the sphere (uses the left hand rule).
+            //    // The direction of the Position is used as the up direction [Y axis) (points to the dorsal part)
+            //    // of the boid. The Z axis is set to the perpendicular to the plane formed by the Y axis
+            //    // and the world UP vector  Vector3.up(0,1,0), and points the local forward of the boid. 
+            //    // The z axis is the head (moving) direction  of the boid. The X axis is the local right 
+            //    // of the 2D circle boid.
+
+
+            //    Vector3 position = m_BoidLEDArray[i].Position;
+            //    Vector3 YAxis = position.normalized; // The direction vector of the boid
+            //                                         // is considered as the local up vector of the boid frame.
+
+            //    Vector3 ZAxis = Vector3.Cross(YAxis, Vector3.up); // XAxis = perpendicular to the
+            //    // plane formed by the boid up and the global up.
+            //    // It is tangent to the surface of sphere, and used as the forward head direction
+            //    // of the boid. 
+            //    // 
+
+            //    Vector3 XAxis = Vector3.Cross(YAxis, ZAxis);  // the side (rightward) direction of the
+            //                                                  // boid 
+
+            //    Vector4 col0 = new Vector4(XAxis[0], XAxis[1], XAxis[2], 0.0f);
+            //    Vector4 col1 = new Vector4(YAxis[0], YAxis[1], YAxis[2], 0.0f);
+            //    Vector4 col2 = new Vector4(ZAxis[0], ZAxis[1], ZAxis[2], 0.0f);
+            //    Vector4 col3 = new Vector4(position[0], position[1], position[2], 1.0f);
+
+            //    Matrix4x4 boidFrame = new Matrix4x4(col0, col1, col2, col3);
+
+
+            //    m_BoidLEDArray[m_firstChain + i].BoidFrame = boidFrame;
+
+            //    m_BoidLEDArray[m_firstChain + i].HeadDir = ZAxis;
+
+
+            //    float initRadiusX = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius); // 0.1 ~ 0.3
+            //    float initRadiusY = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
+            //    float initRadiusZ = Random.Range(m_boids.MinBoidRadius, m_boids.MaxBoidRadius);
+
+
+            //    m_BoidLEDArray[m_firstChain + i].Scale = new Vector3(initRadiusX, initRadiusX, initRadiusX);
+
+            //    //m_writer.WriteLine( (m_firstChain + i) + "th LED POS:" + m_BoidLEDArray[i].Position);
+            //    //m_writer.WriteLine( (m_firstChain + i) + "th LED frame:" + m_BoidLEDArray[i].BoidFrame);
+
+            //    // Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
+
+            //} // for  (int i )
+
+            //} // for  (int i )
+
+
+            // m_writer.Close();
+
+
+            //Debug.Log("Fourth Chain:");
+            //for (int i = 0; i < m_numOfChain4; i++)
+            //{
+            //    // set the head direction of the boid:  direction angle on xz plane
+
+            //    float th_i = GetAngularPositionOfLED(a2, b2, m_startAngleOfChain4, ledInterval,i);
+            //    float r_i = a2 * Mathf.Exp(b2 * th_i);
+
+
+            //    Debug.Log(i + "th LED Ploar POS (th,r):" + new Vector2( th_i * 180 / M_PI, r_i).ToString("F4"));
+
+            //    m_BoidLEDArray[m_numOfChain1 + m_numOfChain2 + m_numOfChain3 +  i].HeadDir = new Vector3(Mathf.Cos(th_i), 0.0f, Mathf.Sin(th_i));
+
+            //    Debug.Log(i + "th LED HeadDir:" + m_BoidLEDArray[m_numOfChain1 + m_numOfChain2 + m_numOfChain3 + i].HeadDir.ToString("F4"));
+
+            //    Vector3 ledPos = r_i * m_BoidLEDArray[m_numOfChain1 + +m_numOfChain2 + m_numOfChain3 + i].HeadDir;
+
+            //    m_BoidLEDArray[m_numOfChain1 + +m_numOfChain2 + m_numOfChain3 + i].Position = ledPos;
+
+            //    float initScaleX = Random.Range(MinCylinderRadius, MaxCylinderRadius); // 0.5 ~ 1.0
+            //                                                                           //float initScaleY = Random.Range(MinCylinderRadius, MaxCylinderRadius);
+            //                                                                           //float initScaleZ = Random.Range(MinCylinderRadius, MaxCylinderRadius);
+
+            //    m_BoidLEDArray[m_numOfChain1 + m_numOfChain2 + m_numOfChain3 + i].Scale = new Vector3(initScaleX, initScaleX, initScaleX);
 
 
 
 
-        //    Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
-        //} // for  (int i )
+            //    Debug.Log(i + "th LED POS:" + ledPos.ToString("F4"));
+            //} // for  (int i )
 
 
 
-    } // SetBoidLEDArray()
+        } // SetBoidLEDArray()
 
 
-    // Get th_i for the ith LED along the sprial curve r = a * exp(b*th_i)
-    float GetAngularPositionOfLED(float a, float b, float th0, ref float LEDChainLength, float ledInterval, int ledNo)
+        // Get th_i for the ith LED along the sprial curve r = a * exp(b*th_i)
+        float GetAngularPositionOfLED(float a, float b, float th0, ref float LEDChainLength, float ledInterval, int ledNo)
     {// // The ith LED  will be placed at location (r_i, th_i)
      //    such that  L(r(th), th0, th_i) = root(1 + b^2)/b * [ r(th_i)  - r(th0)] =ledInterval  * i, 
 
@@ -665,8 +981,6 @@ public class LEDColorGenController : MonoBehaviour
         m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
 
         m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
-
-        m_BoidLEDComputeShader.SetInt("_ColorSamplingMethod", m_colorSamplingMethod);
 
         m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius); // you can change inspector variable' value at runtime
 

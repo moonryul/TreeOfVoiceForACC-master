@@ -43,7 +43,7 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
 
 
       if ( c == 255 ) {
-        m_pos = 0;
+        m_pos = m_bufferSize - 1;
         m_frameInProgess = true;
         return;
       }
@@ -56,14 +56,14 @@ ISR (SPI_STC_vect) { // SPI_STC_vect: invoked when data arrives:
 
       m_buffer[m_pos] = c;
 
-      if ( m_pos == m_bufferSize - 1) {
+      if ( m_pos == 0) {
         m_process_it = true;
         m_frameInProgess = false;
         return;
       } // if
 
       else {
-        m_pos ++; // the next location to fill in the buffer
+        m_pos --; // the next location to fill in the buffer
         return;
       }
     } // else: m_frameInProgess is true: the start byte has arrived
