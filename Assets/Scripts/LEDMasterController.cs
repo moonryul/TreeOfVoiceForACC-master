@@ -117,6 +117,7 @@ public class LEDMasterController : MonoBehaviour
         //m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs + 2;
         m_LEDCount = m_LEDColorGenController.m_totalNumOfLEDs;
 
+
        
         m_LEDArray = new byte[m_LEDCount * 3]; // 186*3 < 1024
 
@@ -126,6 +127,7 @@ public class LEDMasterController : MonoBehaviour
             try
             { //https://social.msdn.microsoft.com/Forums/vstudio/en-US/93583332-d307-4552-bd61-9a2adfcf2480/serial-port-write-method-is-blocking-execution?forum=vbgeneral
 
+
                 //Yes, the Write methods do block , until all data have been passed from the serial port driver to the UART FIFO.
                 //Usually, this is not a problem.It will not block "forever," just for as long as it takes.
                 //For example, if you were to send a 2K byte string, at 9600 bps, the write method would take about 2 seconds to return.
@@ -134,14 +136,13 @@ public class LEDMasterController : MonoBehaviour
                 m_serialPort.Write(m_startByte, 0, 1);
                 m_serialPort.Write(m_LEDArray, 0, m_LEDArray.Length);
                    
-               
 
 
             }
             catch (Exception ex)
             {
-                Debug.Log("Error:" + ex.ToString());
 
+                Debug.Log("Error:" + ex.ToString());
 
             }
 
@@ -184,14 +185,13 @@ public class LEDMasterController : MonoBehaviour
             if (!m_Thread.IsAlive)
             {  // is there a thread running?
                 // 
+
               //  Debug.Log(" the previous run of the thread has finished");
 
 
-                try
-                {
-                    // use the new LED array for the new invocation of the sending thread
+                try { 
 
-                    //  m_LEDArray = ledArray; // struc array: array is a reference type derived from
+                    m_LEDArray = ledArray; // struc array: array is a reference type derived from
                     // the abstract base type Array; they use foreach iteration
 
                     m_Thread = new Thread(new ThreadStart(m_updateArduino));
@@ -222,10 +222,11 @@ public class LEDMasterController : MonoBehaviour
 
             } // The thread is not alive
 
+
             else
             { // the thread is alive
                // Debug.Log("Thread is alive; Wait until it finishes and the arrived array of led bytes is discarded");
-
+          
                 // The sending thread is still busy sending  the previous LED array =>: The arrived LED array is discarded
             }
         }//if (m_ThreadAlreadyCreated == true)
@@ -252,7 +253,6 @@ public class LEDMasterController : MonoBehaviour
 
     void Update()
     {
-
     }
-    
+  
 }//public class LEDMasterController 
