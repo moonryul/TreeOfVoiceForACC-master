@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using Random = UnityEngine.Random;
 
-public class LEDColorGenController : MonoBehaviour
+public class SewhaLEDColorGenController : MonoBehaviour
 {
 
     //BoidLEDRenderDebugData[] m_ComputeBufferArray;
@@ -67,13 +67,15 @@ public class LEDColorGenController : MonoBehaviour
 
     //MOON: These two script objects should be changed to private:
 
-    public SimpleBoidsTreeOfVoice m_boids;
-    public ActionPlanController m_actionPlanController;
+    SimpleBoidsTreeOfVoice m_boids;
+
+    //public ActionPlanController m_actionPlanController;
 
     public int m_colorSamplingMethod = 0; // 0 = get the nearest neighbor color
                                           // 1 = get the average color of the neighbors
 
-    public int m_totalNumOfLEDs; // computed within script
+    public int m_totalNumOfLEDs = 300; // computed within script
+    // 30 led for each arduino. 10 arduinos
 
 
     public float m_samplingRadius = 5f; //10cm
@@ -93,7 +95,8 @@ public class LEDColorGenController : MonoBehaviour
 
     protected int m_kernelIDLED;
 
-    [SerializeField] protected ComputeShader m_BoidLEDComputeShader;
+    //[SerializeField] protected ComputeShader m_BoidLEDComputeShader;
+    ComputeShader m_BoidLEDComputeShader;
     // m_BoidLEDComputeShader is set to SampleLEDColors.compute in the inspector          
     public ComputeBuffer m_BoidLEDBuffer { get; protected set; }
 
@@ -102,6 +105,12 @@ public class LEDColorGenController : MonoBehaviour
     byte[] m_LEDArray;
 
 
+    // 5 boxes on each side; one box: width=2.4m; height = 2m
+    // 2.4 = 1+ 0.4 + 1; The 0.4 area is where people walk; The 1 areas are where LEDs are
+    // distributed. Sample 30 random positions from an area of 1 m x 2 m;
+
+    public float ledBoxWidth = 1;
+    public float ledBoxHeight = 2;
 
     public float m_LEDInterval = 0.2f; // 20cm
     //public int m_SphericalMotion = 0;  
@@ -138,7 +147,10 @@ public class LEDColorGenController : MonoBehaviour
     // delegate signature (interface definition)
 
     public delegate void LEDSenderHandler(byte[] m_LEDArray);
-    public event LEDSenderHandler m_LEDSenderHandler;
+    public event LEDSenderHandler m_LEDSenderHandler; // declare event handler; 
+    // it should be public because it is referred to in CommHub class. 
+
+    //cf: Within CommHub.cs:   m_LEDColorGenController.m_LEDSenderHandler += m_LEDMasterController.UpdateLEDArray;
 
     protected const int BLOCK_SIZE = 256; // The number of threads in a single thread group
 
@@ -201,10 +213,14 @@ public class LEDColorGenController : MonoBehaviour
 
 
 
-        m_LEDArray = new byte[m_totalNumOfLEDs * 3 * 2];
+        m_LEDArray = new byte[m_totalNumOfLEDs * 3 * 2]; // 3? 2?
 
         //m_boidArray = new BoidData[ (int) m_BoidsNum ]; // for debugging
 
+        //ComputeShader m_BoidLEDComputeShader; // get the reference to ComputeShader
+        // ComputeShader cs = (ComputeShader)Resources.Load("NameOfShader")
+
+        m_BoidLEDComputeShader = Resources.Load<ComputeShader>("ComputeShaders/SampleLEDColors");
 
         if (m_BoidLEDComputeShader == null)
         {
@@ -212,9 +228,9 @@ public class LEDColorGenController : MonoBehaviour
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
             // UnityEditor.EditorApplication.isPlaying = false;
-            UnityEditor.EditorApplication.Exit(0);
+           // UnityEditor.EditorApplication.Exit(0);
 #else
-            Application.Quit();
+           // Application.Quit();
 #endif
         }
 
@@ -277,9 +293,9 @@ public class LEDColorGenController : MonoBehaviour
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
             //  UnityEditor.EditorApplication.isPlaying = false;
-            UnityEditor.EditorApplication.Exit(0);
+            //UnityEditor.EditorApplication.Exit(0);
 #else
-            Application.Quit();
+           // Application.Quit();
 #endif
 
         }
@@ -658,7 +674,7 @@ public class LEDColorGenController : MonoBehaviour
 
         // m_BoidLEDComputeShader.SetFloat("_SamplingRadius", m_samplingRadius);
 
-        m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere);
+        m_boids.DetermineParamValue("_Hemisphere", out m_Hemisphere); // which hemisphere
 
         m_BoidLEDComputeShader.SetFloat("_Hemisphere", m_Hemisphere);
 
@@ -805,9 +821,9 @@ public class LEDColorGenController : MonoBehaviour
 #if UNITY_EDITOR
             // Application.Quit() does not work in the editor so
             // UnityEditor.EditorApplication.isPlaying = false;
-            UnityEditor.EditorApplication.Exit(0);
+            //UnityEditor.EditorApplication.Exit(0);
 #else
-            Application.Quit();
+           // Application.Quit();
 #endif
 
         }

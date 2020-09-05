@@ -12,15 +12,15 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
     [SerializeField] Material m_boidLEDInstanceMaterial;
     
 
-    // Update is called once per frame
+   
     bool m_fileWritten = false;
-    // Cameras for DrwaMeshInstanced()
-
+ 
     Camera m_MainCamera, m_CameraToGround, m_CameraToCeiling, m_CameraToFrontWall;
 
     //http://blog.deferredreality.com/write-to-custom-data-buffers-from-shaders/
     //The register(u2) represents which internal gpu registrar to bind the data structure to.
     //You need to specify the same in C#, and keep in mind this is global on the GPU.
+
     ComputeBuffer m_MatrixBuffer;
     ComputeBuffer m_LEDBoidPosBuffer;
     int m_numOfShaderMatrices = 3; // 
@@ -35,6 +35,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
     //public float this[int index] { get; set; }
     //public float this[int row, int column] { get; set; }
 
+    // The objects for Scripts are all private:
 
     SimpleBoidsTreeOfVoice m_boids; // _boids.BoidBuffer is a ComputeBuffer
 
@@ -161,7 +162,7 @@ public class BoidLEDRendererTreeOfVoice : MonoBehaviour
 
 
 
-
+        // this.gameObject is CommHubb; All scripts are attached to CommHubb.
         m_LEDColorGenController = this.gameObject.GetComponent<LEDColorGenController>();
         m_boids = this.gameObject.GetComponent<SimpleBoidsTreeOfVoice>();
 

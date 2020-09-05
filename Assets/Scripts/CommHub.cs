@@ -85,7 +85,7 @@ public class CommHub : MonoBehaviour
     public ActionPlanFileManager  m_actionPlanFileManager;
 
     public LEDColorGenController m_LEDColorGenController;
- 
+    //public SewhaLEDColorGenController m_LEDColorGenController;
     public PointerEventsController m_pointerEventsController;
 
     public IRSensorMasterController m_IRSensorMasterController;
@@ -115,8 +115,8 @@ public class CommHub : MonoBehaviour
         m_actionPlanFileManager= this.gameObject.GetComponent<ActionPlanFileManager>();
 
         //debugging
-        m_LEDColorGenController =this.gameObject.GetComponent<LEDColorGenController>(); // compute Shader use
-
+        m_LEDColorGenController =this.gameObject.GetComponent<LEDColorGenController>(); 
+        //m_LEDColorGenController =this.gameObject.GetComponent<SewhaLEDColorGenController>();
         if (m_LEDColorGenController == null)
         {
             Debug.LogError("The component LEDColorGenController  should be added to CommHub");
@@ -203,14 +203,17 @@ public class CommHub : MonoBehaviour
         }
 
 
-     
 
-       
-                   
+
+
+
         //debugging
-   
+
+        //m_LEDColorGenController.m_LEDSenderHandler += m_LEDMasterController.UpdateLEDArray;
         m_LEDColorGenController.m_LEDSenderHandler += m_LEDMasterController.UpdateLEDArray;
 
+        //cf:  public delegate void LEDSenderHandler(byte[] m_LEDArray);
+        //     public event LEDSenderHandler m_LEDSenderHandler; // declare event handler; 
 
         // Define Event Handlers for InputField Event          
 

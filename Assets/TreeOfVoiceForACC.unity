@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.4465782, g: 0.49641252, b: 0.5748167, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657826, g: 0.49641263, b: 0.57481676, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -555,10 +555,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 468306996}
   m_HandleRect: {fileID: 468306995}
   m_Direction: 0
-
-  m_Value: 0.00000044878792
+  m_Value: 0
   m_Size: 0.915
-
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1408,8 +1406,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 69723809}
   m_HandleRect: {fileID: 69723808}
   m_Direction: 2
-  m_Value: 0.99999976
-  m_Size: 0.60999995
+  m_Value: 1
+  m_Size: 0.61
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2004,6 +2002,7 @@ GameObject:
   - component: {fileID: 1304115018}
   - component: {fileID: 1304115017}
   - component: {fileID: 1304115016}
+  - component: {fileID: 1304115027}
   m_Layer: 0
   m_Name: CommHub
   m_TagString: Untagged
@@ -2023,17 +2022,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b27bc267cc2224e977727d73ef39a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_displayController: {fileID: 0}
-  m_boidsController: {fileID: 0}
-  m_boidsRenderer: {fileID: 0}
-  m_actionPlanController: {fileID: 0}
-  m_actionPlanUpdateController: {fileID: 0}
-  m_actionPlanFileManager: {fileID: 0}
-  m_LEDColorGenController: {fileID: 0}
-  m_pointerEventsController: {fileID: 0}
-  m_IRSensorMasterController: {fileID: 0}
-  m_LEDMasterController: {fileID: 0}
-  m_neuroHeadSetController: {fileID: 0}
+  m_displayController: {fileID: 1304115022}
+  m_boidsController: {fileID: 1304115015}
+  m_boidsRenderer: {fileID: 1304115023}
+  m_actionPlanController: {fileID: 1304115025}
+  m_actionPlanUpdateController: {fileID: 1304115020}
+  m_actionPlanFileManager: {fileID: 1304115024}
+  m_LEDColorGenController: {fileID: 1304115019}
+  m_pointerEventsController: {fileID: 1304115016}
+  m_IRSensorMasterController: {fileID: 1304115021}
+  m_LEDMasterController: {fileID: 1304115018}
+  m_neuroHeadSetController: {fileID: 1304115017}
 --- !u!4 &1304115014
 Transform:
   m_ObjectHideFlags: 0
@@ -2162,6 +2161,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_portName: COM18
+  m_threadCounter: 0
+  m_arduinoSendPeriod: 500
   m_LEDArray: 
   m_LEDCount: 0
 --- !u!114 &1304115019
@@ -2171,13 +2172,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1304115012}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2dcacd5c70b1f93469a13bcf17c74a93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_boids: {fileID: 0}
-  m_actionPlanController: {fileID: 0}
+  m_boids: {fileID: 1304115015}
+  m_actionPlanController: {fileID: 1304115025}
   m_colorSamplingMethod: 0
   m_totalNumOfLEDs: 0
   m_samplingRadius: 0.05
@@ -2196,8 +2197,6 @@ MonoBehaviour:
   m_fourthChain: 52
   m_beginFromInChain1: -135
   m_beginFromInChain2: -70
-  m_threadCounter: 0
-  m_arduinoSendPeriod: 100
 --- !u!114 &1304115020
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2210,7 +2209,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8d053ddafa3ee447b0baffef03b09a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_actionPlanController: {fileID: 0}
+  m_actionPlanController: {fileID: 1304115025}
 --- !u!114 &1304115021
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2286,7 +2285,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b00c6f0534e2c9949a3f04af3a23e493, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_boidsController: {fileID: 0}
+  m_boidsController: {fileID: 1304115015}
   m_AnimationCycle: 390
   m_contentWidth: 10000
   m_contentHeight: 2000
@@ -2294,23 +2293,23 @@ MonoBehaviour:
   m_scrollRectHeight: 0
   m_canvasWidth: 0
   m_canvasHeight: 0
-  m_myScrollRect: {fileID: 0}
-  m_canvasObj: {fileID: 0}
-  m_scrollViewObj: {fileID: 0}
-  m_viewportObj: {fileID: 0}
-  m_contentObj: {fileID: 0}
-  m_contentTitleObj: {fileID: 0}
-  m_contentTimeLineObj: {fileID: 0}
-  m_contentKeysObj: {fileID: 0}
-  m_contentValuesObj: {fileID: 0}
-  m_scrollbarHorizontalObj: {fileID: 0}
-  m_scrollbarVerticalObj: {fileID: 0}
-  m_contentTimeLineClipRectObj: {fileID: 0}
-  m_contentKeysClipRectObj: {fileID: 0}
-  m_contentValuesClipRectObj: {fileID: 0}
-  m_saveButtonObj: {fileID: 0}
-  m_loadButtonObj: {fileID: 0}
-  m_canvas: {fileID: 0}
+  m_myScrollRect: {fileID: 1428188483}
+  m_canvasObj: {fileID: 601839495}
+  m_scrollViewObj: {fileID: 1428188478}
+  m_viewportObj: {fileID: 1377733384}
+  m_contentObj: {fileID: 1771518757}
+  m_contentTitleObj: {fileID: 1450519711}
+  m_contentTimeLineObj: {fileID: 1810225808}
+  m_contentKeysObj: {fileID: 23183960}
+  m_contentValuesObj: {fileID: 1313479752}
+  m_scrollbarHorizontalObj: {fileID: 435919957}
+  m_scrollbarVerticalObj: {fileID: 807844796}
+  m_contentTimeLineClipRectObj: {fileID: 973840066}
+  m_contentKeysClipRectObj: {fileID: 1120256050}
+  m_contentValuesClipRectObj: {fileID: 1803059460}
+  m_saveButtonObj: {fileID: 1570397140}
+  m_loadButtonObj: {fileID: 650265283}
+  m_canvas: {fileID: 601839498}
 --- !u!114 &1304115026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2326,6 +2325,36 @@ MonoBehaviour:
   m_boidLEDInstanceMaterial: {fileID: 2100000, guid: bb23dba0c1e1a64488eaa91992156c54,
     type: 2}
   m_scale: 1
+--- !u!114 &1304115027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1304115012}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a487490356462da409f2558751de98ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_colorSamplingMethod: 0
+  m_totalNumOfLEDs: 300
+  m_samplingRadius: 5
+  m_LEDChainHeight: 9
+  m_Hemisphere: 1
+  ledBoxWidth: 1
+  ledBoxHeight: 2
+  m_LEDInterval: 0.2
+  m_startingRadiusOfInnerChain: 0.1
+  m_endingRadiusOfInnerChainThreeTurns: 0.8
+  m_startingRadiusOfOuterChain: 1.4
+  m_endingRadiusOfOuterChainThreeTurns: 2
+  m_firstChain: 40
+  m_secondChain: 44
+  m_thirdChain: 50
+  m_fourthChain: 52
+  m_beginFromInChain1: -135
+  m_beginFromInChain2: -70
 --- !u!1 &1306796409
 GameObject:
   m_ObjectHideFlags: 0
